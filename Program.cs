@@ -34,8 +34,10 @@ builder.Services.AddScoped<UsuarioService>();
 builder.Services.AddScoped<EmpresaService>();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<ClienteService>();
+builder.Services.AddScoped<ProyectoService>();
+builder.Services.AddScoped<TareaService>();
 
-// swagger
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();

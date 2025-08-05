@@ -3,6 +3,7 @@ using TaskTracker.DTOs;
 using TaskTracker.Models;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
 
 public class UsuarioService
 {
@@ -31,6 +32,16 @@ public class UsuarioService
         await _context.SaveChangesAsync();
 
         return usuario;
+    }
+
+    public async Task<Usuario?> ObtenerUsuarioPorIdAsync(int id)
+    {
+         return await _context.Usuarios.FindAsync(id);
+    }
+
+    public async Task<List<Usuario>> ObtenerTodosAsync()
+    {
+        return await _context.Usuarios.ToListAsync();
     }
 
     private string HashPassword(string password)
