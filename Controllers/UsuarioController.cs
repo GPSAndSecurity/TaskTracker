@@ -70,4 +70,29 @@ public class UsuariosController : ControllerBase
             usuario.EmpresaId
         });
     }
+
+    [HttpPut("{id}")]
+    [Authorize(Roles = "superadmin,admin_empresa")]
+    public async Task<IActionResult> ActualizarUsuario(int id, UpdateUsuarioDto dto)
+    {
+        var usuario = await _service.ObtenerUsuarioPorIdAsync(id);
+        if (usuario == null)
+            return NotFound();
+
+        var actualizado = await _service.ActualizarUsuarioAsync(id, dto);
+        return Ok(actualizado);
+    }
+
+
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "superadmin")]
+    public async Task<IActionResult> EliminarUsuario(int id)
+    {
+        var usuario = await _service.ObtenerUsuarioPorIdAsync(id);
+        if (usuario == null)
+        return NotFound();
+
+        await _service.EliminarUsuarioAsync(id);
+        return NoContent();
+    }
 }
