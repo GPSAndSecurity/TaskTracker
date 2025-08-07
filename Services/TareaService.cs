@@ -32,13 +32,26 @@ public class TareaService
             Prioridad = dto.Prioridad,
             AttachmentRequerido = dto.AttachmentRequerido,
             UbicacionRequeridaAlCerrar = dto.UbicacionRequeridaAlCerrar,
-            Estado = EstadoTarea.EnProceso // Asegúrate de que esté definido en tu enum
+            Estado = EstadoTarea.EnProceso // Asegúrate que esté definido en tu enum
         };
 
         _context.Tareas.Add(tarea);
         await _context.SaveChangesAsync();
 
         return tarea;
+    }
+
+    public async Task<List<Tarea>> ObtenerTareasPorProyectoAsync(int proyectoId, int empresaId)
+    {
+        // Validar que el proyecto pertenezca a la empresa
+        var proyectoValido = await _context.Proyectos
+            .AnyAsync(p => p.Id == proyectoId && p.EmpresaId == empresaId);
+        if (!proyectoValido)
+            return new List<Tarea>();
+
+        return await _context.Tareas
+            .Where(t => t.ProyectoId == proyectoId)
+            .ToListAsync();
     }
 
     public async Task<bool> AsignarColaboradoresATareaAsync(int tareaId, List<int> usuarioIds, int empresaId)
@@ -66,19 +79,17 @@ public class TareaService
         return true;
     }
 
-public async Task<bool> CambiarEstadoTareaAsync(int tareaId, EstadoTarea nuevoEstado, int empresaId)
-{
-    var tarea = await _context.Tareas
-        .Include(t => t.Proyecto)
-        .FirstOrDefaultAsync(t => t.Id == tareaId);
+    public async Task<bool> CambiarEstadoTareaAsync(int tareaId, EstadoTarea nuevoEstado, int empresaId)
+    {
+        var tarea = await _context.Tareas
+            .Include(t => t.Proyecto)
+            .FirstOrDefaultAsync(t => t.Id == tareaId);
 
-    if (tarea == null || tarea.Proyecto == null || tarea.Proyecto.EmpresaId != empresaId)
-        return false;
+        if (tarea == null || tarea.Proyecto == null || tarea.Proyecto.EmpresaId != empresaId)
+            return false;
 
-    tarea.Estado = nuevoEstado;
-    await _context.SaveChangesAsync();
-    return true;
-}
-
-
+        tarea.Estado = nuevoEstado;
+        await _context.SaveChangesAsync();
+        return true;
+    }
 }

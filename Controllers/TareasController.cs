@@ -32,6 +32,16 @@ public class TareasController : ControllerBase
         return CreatedAtAction(nameof(CrearTarea), new { id = tarea.Id }, tarea);
     }
 
+    [HttpGet("por-proyecto/{proyectoId}")]
+    public async Task<ActionResult<List<Tarea>>> ObtenerTareasPorProyecto(int proyectoId)
+    {
+        var empresaId = GetEmpresaIdFromToken();
+        if (empresaId == null) return Unauthorized();
+
+        var tareas = await _tareaService.ObtenerTareasPorProyectoAsync(proyectoId, empresaId.Value);
+        return Ok(tareas);
+    }
+
     [HttpPost("asignar-colaboradores")]
     public async Task<IActionResult> AsignarColaboradores(int tareaId, [FromBody] List<int> usuarioIds)
     {
@@ -43,6 +53,19 @@ public class TareasController : ControllerBase
             return BadRequest("Tarea no encontrada o usuarios inválidos.");
 
         return Ok("Colaboradores asignados a la tarea.");
+    }
+
+    [HttpPatch("{tareaId}/estado")]
+    public async Task<IActionResult> CambiarEstadoTarea(int tareaId, [FromBody] EstadoTarea nuevoEstado)
+    {
+        var empresaId = GetEmpresaIdFromToken();
+        if (empresaId == null) return Unauthorized();
+
+        var exito = await _tareaService.CambiarEstadoTareaAsync(tareaId, nuevoEstado, empresaId.Value);
+        if (!exito)
+            return BadRequest("Tarea no encontrada o no pertenece a la empresa.");
+
+        return Ok("Estado de tarea actualizado.");
     }
 
     private int? GetEmpresaIdFromToken()

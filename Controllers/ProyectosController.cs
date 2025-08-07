@@ -36,6 +36,7 @@ public class ProyectosController : ControllerBase
     public async Task<ActionResult<List<Proyecto>>> ObtenerProyectos()
     {
         var empresaId = GetEmpresaIdFromToken();
+        Console.WriteLine($"[DEBUG] empresaId desde token: {empresaId}");
         if (empresaId == null)
             return Unauthorized("Empresa no identificada en el token.");
 

@@ -40,13 +40,18 @@ builder.Services.AddScoped<TareaService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.WriteIndented = true;
+    });
 
 // --- AÑADIR CORS ---
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
-    {
+     {
         policy.WithOrigins("http://localhost:4200") // URL de tu frontend Angular
               .AllowAnyHeader()
               .AllowAnyMethod();

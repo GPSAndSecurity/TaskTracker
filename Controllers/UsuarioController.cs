@@ -90,9 +90,22 @@ public class UsuariosController : ControllerBase
     {
         var usuario = await _service.ObtenerUsuarioPorIdAsync(id);
         if (usuario == null)
-        return NotFound();
+            return NotFound();
 
         await _service.EliminarUsuarioAsync(id);
         return NoContent();
     }
+    // Obtener colaboradores de la empresa del usuario autenticado
+    [HttpGet("colaboradores")]
+    [Authorize(Roles = "admin_empresa,superadmin")]
+    public async Task<ActionResult<IEnumerable<Usuario>>> ObtenerColaboradores()
+    {
+        var empresaIdStr = User.FindFirst("empresaId")?.Value;
+        if (!int.TryParse(empresaIdStr, out var empresaId))
+            return Unauthorized("Empresa no encontrada en el token.");
+
+        var colaboradores = await _service.ObtenerColaboradoresPorEmpresaAsync(empresaId);
+        return Ok(colaboradores);
+}
+
 }

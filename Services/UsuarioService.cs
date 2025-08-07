@@ -89,4 +89,11 @@ public class UsuarioService
         using var sha256 = SHA256.Create();
         return Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
     }
+
+    public async Task<List<Usuario>> ObtenerColaboradoresPorEmpresaAsync(int empresaId)
+    {
+        return await _context.Usuarios
+            .Where(u => u.EmpresaId == empresaId && u.Rol == "colaborador")
+            .ToListAsync();
+    }
 }
