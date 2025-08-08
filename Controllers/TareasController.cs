@@ -74,4 +74,18 @@ public class TareasController : ControllerBase
         var empresaClaim = User.FindFirst("empresaId")?.Value;
         return int.TryParse(empresaClaim, out var id) ? id : null;
     }
+
+    [HttpDelete("{tareaId}")]
+public async Task<IActionResult> EliminarTarea(int tareaId)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null) return Unauthorized();
+
+    var exito = await _tareaService.EliminarTareaAsync(tareaId, empresaId.Value);
+    if (!exito)
+        return NotFound("Tarea no encontrada o no pertenece a tu empresa.");
+
+    return NoContent();
+}
+
 }

@@ -15,14 +15,19 @@ public class JwtService
 
     public string GenerateToken(Usuario user)
     {
-        var claims = new[]
+        var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.Name ), 
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Role, user.Rol),
-            new Claim("empresaId", user.EmpresaId?.ToString() ?? "")
+            new Claim(ClaimTypes.Name, user.Name ?? string.Empty),
+            new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+            new Claim(ClaimTypes.Role, user.Rol ?? string.Empty),
         };
+
+        // Añadir claim empresaId solo si tiene valor válido
+        if (user.EmpresaId.HasValue && user.EmpresaId.Value > 0)
+        {
+            claims.Add(new Claim("empresaId", user.EmpresaId.Value.ToString()));
+        }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

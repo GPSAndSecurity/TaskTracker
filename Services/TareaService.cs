@@ -32,7 +32,7 @@ public class TareaService
             Prioridad = dto.Prioridad,
             AttachmentRequerido = dto.AttachmentRequerido,
             UbicacionRequeridaAlCerrar = dto.UbicacionRequeridaAlCerrar,
-            Estado = EstadoTarea.EnProceso // Asegúrate que esté definido en tu enum
+            Estado = EstadoTarea.Pendiente // Asegúrate que esté definido en tu enum
         };
 
         _context.Tareas.Add(tarea);
@@ -89,6 +89,20 @@ public class TareaService
             return false;
 
         tarea.Estado = nuevoEstado;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> EliminarTareaAsync(int tareaId, int empresaId)
+    {
+        var tarea = await _context.Tareas
+            .Include(t => t.Proyecto)
+            .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto.EmpresaId == empresaId);
+
+        if (tarea == null)
+            return false;
+
+        _context.Tareas.Remove(tarea);
         await _context.SaveChangesAsync();
         return true;
     }
