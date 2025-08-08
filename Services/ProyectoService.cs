@@ -41,7 +41,7 @@ public class ProyectoService
 
     public async Task<bool> AsignarColaboradoresAsync(int empresaId, AsignarColaboradoresProyectoDto dto)
     {
-            // Verifica que el proyecto pertenece a la empresa
+        // Verifica que el proyecto pertenece a la empresa
         var proyecto = await _context.Proyectos
             .FirstOrDefaultAsync(p => p.Id == dto.ProyectoId && p.EmpresaId == empresaId);
 
@@ -62,6 +62,19 @@ public class ProyectoService
         await _context.SaveChangesAsync();
 
         return true;
+    }
+
+public async Task<bool> EliminarProyectoAsync(int proyectoId, int empresaId)
+{
+    var proyecto = await _context.Proyectos
+        .FirstOrDefaultAsync(p => p.Id == proyectoId && p.EmpresaId == empresaId);
+
+    if (proyecto == null)
+        return false;
+
+    _context.Proyectos.Remove(proyecto);
+    await _context.SaveChangesAsync();
+    return true;
 }
 
 

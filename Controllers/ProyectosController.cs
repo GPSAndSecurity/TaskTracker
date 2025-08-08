@@ -50,7 +50,7 @@ public class ProyectosController : ControllerBase
         return int.TryParse(empresaClaim, out var id) ? id : null;
     }
 
-// asignar colaboradores al proyecto
+    // asignar colaboradores al proyecto
     [HttpPost("asignar-colaboradores")]
     public async Task<IActionResult> AsignarColaboradores([FromBody] AsignarColaboradoresProyectoDto dto)
     {
@@ -64,5 +64,26 @@ public class ProyectosController : ControllerBase
 
         return Ok("Colaboradores asignados correctamente.");
     }
+    
+[HttpDelete("{id}")]
+public async Task<IActionResult> EliminarProyecto(int id)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null)
+        return Unauthorized("Empresa no identificada en el token.");
+
+    Console.WriteLine($"Intentando eliminar proyecto {id} de empresa {empresaId}");
+
+    var exito = await _proyectoService.EliminarProyectoAsync(id, empresaId.Value);
+    if (!exito)
+    {
+        Console.WriteLine($"No se encontró proyecto {id} o no pertenece a empresa {empresaId}");
+        return NotFound("Proyecto no encontrado o no pertenece a tu empresa.");
+    }
+
+    Console.WriteLine($"Proyecto {id} eliminado correctamente");
+    return NoContent(); // 204 sin contenido
+}
+
 
 }

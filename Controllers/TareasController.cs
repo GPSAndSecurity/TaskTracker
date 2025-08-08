@@ -55,13 +55,14 @@ public class TareasController : ControllerBase
         return Ok("Colaboradores asignados a la tarea.");
     }
 
+    // PATCH para actualizar el estado recibiendo el estado en el body
     [HttpPatch("{tareaId}/estado")]
-    public async Task<IActionResult> CambiarEstadoTarea(int tareaId, [FromBody] EstadoTarea nuevoEstado)
+    public async Task<IActionResult> CambiarEstadoTarea(int tareaId, [FromBody] CambiarEstadoTareaDto dto)
     {
         var empresaId = GetEmpresaIdFromToken();
         if (empresaId == null) return Unauthorized();
 
-        var exito = await _tareaService.CambiarEstadoTareaAsync(tareaId, nuevoEstado, empresaId.Value);
+        var exito = await _tareaService.CambiarEstadoTareaAsync(tareaId, dto.NuevoEstado, empresaId.Value);
         if (!exito)
             return BadRequest("Tarea no encontrada o no pertenece a la empresa.");
 

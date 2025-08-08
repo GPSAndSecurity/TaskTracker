@@ -11,9 +11,11 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
-//jwt
+
+// JWT
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("JWT Key not found in configuration.");
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -30,6 +32,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
 builder.Services.AddScoped<UsuarioService>();
 builder.Services.AddScoped<EmpresaService>();
 builder.Services.AddScoped<JwtService>();
@@ -37,31 +40,32 @@ builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<ProyectoService>();
 builder.Services.AddScoped<TareaService>();
 
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.WriteIndented = true;
+        options.JsonSerializerOptions.PropertyNamingPolicy = null; // 👈 fuerza PascalCase
+
     });
 
 // --- AÑADIR CORS ---
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
-     {
+    {
         policy.WithOrigins("http://localhost:4200") // URL de tu frontend Angular
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
 });
 
-
 var app = builder.Build();
 
-//MIDDLEWARES
+// MIDDLEWARES
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -69,7 +73,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 
 app.UseCors();
 
