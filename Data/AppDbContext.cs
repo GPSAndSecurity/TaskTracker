@@ -19,6 +19,10 @@ public class AppDbContext : DbContext
     public DbSet<TareaAdjunto> TareaAdjuntos { get; set; }
     public DbSet<TareaComentario> TareaComentarios { get; set; }
 
+
+
+
+//Crear las relaciones entre las tablas 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Usuario>().HasIndex(u => u.Email).IsUnique();

@@ -32,32 +32,31 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
-
 builder.Services.AddScoped<UsuarioService>();
 builder.Services.AddScoped<EmpresaService>();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<ProyectoService>();
 builder.Services.AddScoped<TareaService>();
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.WriteIndented = true;
-        options.JsonSerializerOptions.PropertyNamingPolicy = null; // 👈 fuerza PascalCase
+        options.JsonSerializerOptions.PropertyNamingPolicy = null; 
 
     });
 
-// --- AÑADIR CORS ---
+// CORS 
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:4200") // URL de tu frontend Angular
+        policy.WithOrigins("http://localhost:4200") 
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -65,7 +64,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// MIDDLEWARES
+//Para actvar swagger 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

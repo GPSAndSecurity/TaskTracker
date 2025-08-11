@@ -39,13 +39,28 @@ public class UsuariosController : ControllerBase
     }
 
     // Obtener todos los usuarios (solo superadmin)
-    [HttpGet]
-    [Authorize(Roles = "superadmin")]
-    public async Task<ActionResult<IEnumerable<Usuario>>> ObtenerTodos()
+[HttpGet]
+[Authorize(Roles = "superadmin,admin_empresa")]
+public async Task<ActionResult<IEnumerable<Usuario>>> ObtenerUsuarios()
+{
+    var rol = User.FindFirst(ClaimTypes.Role)?.Value;
+    var empresaIdStr = User.FindFirst("empresaId")?.Value;
+
+    if (rol == "superadmin")
     {
         var usuarios = await _service.ObtenerTodosAsync();
         return Ok(usuarios);
     }
+
+    if (rol == "admin_empresa" && int.TryParse(empresaIdStr, out var empresaId))
+    {
+        var colaboradores = await _service.ObtenerColaboradoresPorEmpresaAsync(empresaId);
+        return Ok(colaboradores);
+    }
+
+    return Forbid();
+}
+
 
     // Obtener el perfil del usuario autenticado
     [HttpGet("perfil")]

@@ -3,8 +3,8 @@ namespace TaskTracker.Models;
 public enum EstadoTarea
 {
     Pendiente,       
-    Lista,           // Tareas listas para trabajar
+    Lista,           // listas para trabajar osea que ya esta asignada a alguien
     EnProceso,       
-    Finalizada,      // Tareas finalizadas
-    Inconclusa       // Tareas inconclusas
+    Finalizada,      
+    Inconclusa       
 }

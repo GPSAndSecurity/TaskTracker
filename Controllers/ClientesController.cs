@@ -7,7 +7,7 @@ using TaskTracker.Services;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize] // Protege todas las rutas
+[Authorize] 
 public class ClientesController : ControllerBase
 {
     private readonly ClienteService _service;
@@ -44,7 +44,7 @@ public class ClientesController : ControllerBase
     [Authorize(Roles = "admin_empresa,superadmin")]
     public async Task<ActionResult<Cliente>> CrearCliente(CreateClienteDto dto)
     {
-        dto.EmpresaId = ObtenerEmpresaIdDesdeToken(); // Asignamos empresa desde el token
+        dto.EmpresaId = ObtenerEmpresaIdDesdeToken(); 
         var cliente = await _service.CrearClienteAsync(dto);
         return CreatedAtAction(nameof(GetClientePorId), new { id = cliente.Id }, cliente);
     }
@@ -79,7 +79,7 @@ public class ClientesController : ControllerBase
         return NoContent();
     }
 
-    // 🛡️ Utilidad para extraer empresaId desde el token
+    //Obyener empresaId desde el token
     private int ObtenerEmpresaIdDesdeToken()
     {
         var claim = User.Claims.FirstOrDefault(c => c.Type == "empresaId")?.Value;

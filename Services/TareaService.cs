@@ -16,7 +16,6 @@ public class TareaService
 
     public async Task<Tarea?> CrearTareaAsync(CreateTareaDto dto, int empresaId)
     {
-        // Verificar que el proyecto pertenezca a la empresa
         var proyecto = await _context.Proyectos
             .FirstOrDefaultAsync(p => p.Id == dto.ProyectoId && p.EmpresaId == empresaId);
 
@@ -32,7 +31,7 @@ public class TareaService
             Prioridad = dto.Prioridad,
             AttachmentRequerido = dto.AttachmentRequerido,
             UbicacionRequeridaAlCerrar = dto.UbicacionRequeridaAlCerrar,
-            Estado = EstadoTarea.Pendiente // Asegúrate que esté definido en tu enum
+            Estado = EstadoTarea.Pendiente
         };
 
         _context.Tareas.Add(tarea);
@@ -43,7 +42,6 @@ public class TareaService
 
     public async Task<List<Tarea>> ObtenerTareasPorProyectoAsync(int proyectoId, int empresaId)
     {
-        // Validar que el proyecto pertenezca a la empresa
         var proyectoValido = await _context.Proyectos
             .AnyAsync(p => p.Id == proyectoId && p.EmpresaId == empresaId);
         if (!proyectoValido)
@@ -105,5 +103,45 @@ public class TareaService
         _context.Tareas.Remove(tarea);
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<Tarea?> ObtenerTareaDetalleAsync(int tareaId, int empresaId)
+    {
+        var tarea = await _context.Tareas
+            .Include(t => t.Comentarios)
+                .ThenInclude(c => c.Usuario)
+            .Include(t => t.Asignados)
+                .ThenInclude(a => a.Usuario)
+            .Include(t => t.Adjuntos)
+            .Include(t => t.SubTareas)
+            .Include(t => t.Proyecto)
+            .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto!.EmpresaId == empresaId);
+
+        return tarea;
+    }
+
+    public async Task<TareaComentario?> AgregarComentarioAsync(int tareaId, int usuarioId, string texto, int empresaId)
+    {
+        var tarea = await _context.Tareas
+            .Include(t => t.Proyecto)
+            .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto!.EmpresaId == empresaId);
+
+        if (tarea == null) return null;
+
+        var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == usuarioId && u.EmpresaId == empresaId);
+        if (usuario == null) return null;
+
+        var comentario = new TareaComentario
+        {
+            TareaId = tareaId,
+            UsuarioId = usuarioId,
+            ComentarioTexto = texto,
+            FechaComentario = DateTime.UtcNow
+        };
+
+        _context.TareaComentarios.Add(comentario);
+        await _context.SaveChangesAsync();
+
+        return comentario;
     }
 }
