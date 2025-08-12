@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TaskTracker.DTOs;
+using TaskTracker.DTOs;  
 using TaskTracker.Models;
 using TaskTracker.Services;
 using Microsoft.EntityFrameworkCore;
@@ -127,6 +127,32 @@ namespace TaskTracker.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(comentario); // Puedes devolver el comentario completo si es necesario
+        }
+
+        // 8. Actualizar toda la tarea (no solo el estado)
+        [HttpPut("{tareaId}")]
+        public async Task<IActionResult> ActualizarTarea(int tareaId, [FromBody] UpdateTareaDto tareaDto)
+        {
+            var empresaId = GetEmpresaIdFromToken();
+            if (empresaId == null) return Unauthorized();
+
+            var tarea = await _context.Tareas.FindAsync(tareaId);
+            if (tarea == null) return NotFound("Tarea no encontrada.");
+
+            // Actualizamos los valores de la tarea con el DTO recibido
+            tarea.Descripcion = tareaDto.Descripcion;
+            tarea.Ubicacion = tareaDto.Ubicacion;
+            tarea.FechaInicioEstimado = tareaDto.FechaInicioEstimado;
+            tarea.FechaFinEstimado = tareaDto.FechaFinEstimado;
+            tarea.Prioridad = tareaDto.Prioridad;
+            tarea.AttachmentRequerido = tareaDto.AttachmentRequerido;
+            tarea.UbicacionRequeridaAlCerrar = tareaDto.UbicacionRequeridaAlCerrar;
+
+            // Guardar los cambios en la base de datos
+            _context.Tareas.Update(tarea);
+            await _context.SaveChangesAsync();
+
+            return Ok(tarea); // Retornar la tarea actualizada
         }
 
         // -----------------------

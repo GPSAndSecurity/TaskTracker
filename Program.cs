@@ -19,6 +19,7 @@ var jwtKey = builder.Configuration["Jwt:Key"]
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Configuración de validación del token
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -28,6 +29,26 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+
+        // Configuración de eventos de autenticación de JWT
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                Console.WriteLine("Error de autenticación: " + context.Exception.Message);
+                return Task.CompletedTask;
+            },
+            OnChallenge = context =>
+            {
+                Console.WriteLine("Desafío de autenticación: " + context.Error);
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                Console.WriteLine("Token validado con éxito.");
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -48,7 +69,6 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.WriteIndented = true;
         options.JsonSerializerOptions.PropertyNamingPolicy = null; 
-
     });
 
 // CORS 
@@ -64,7 +84,23 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-//Para actvar swagger 
+// Middleware de depuración para verificar que el token está llegando correctamente
+app.Use(async (context, next) =>
+{
+    var token = context.Request.Headers["Authorization"].ToString();
+    if (!string.IsNullOrEmpty(token))
+    {
+        Console.WriteLine("Token encontrado: " + token);
+    }
+    else
+    {
+        Console.WriteLine("No se encontró token.");
+    }
+
+    await next.Invoke(); // Continuamos con la ejecución normal
+});
+
+//Para activar swagger 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -75,8 +111,8 @@ app.UseHttpsRedirection();
 
 app.UseCors();
 
-app.UseAuthentication();
-app.UseAuthorization();
+app.UseAuthentication();  // Asegúrate de que el orden sea correcto
+app.UseAuthorization();   // Autorización después de autenticación
 
 app.MapControllers();
 
