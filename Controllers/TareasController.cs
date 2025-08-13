@@ -1,46 +1,26 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TaskTracker.DTOs;  
+using TaskTracker.DTOs;
 using TaskTracker.Models;
 using TaskTracker.Services;
-using Microsoft.EntityFrameworkCore;
-using TaskTracker.Data;
+using System.Security.Claims;
 
 namespace TaskTracker.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "admin_empresa,superadmin")]
+    [Authorize(Roles = "admin_empresa,superadmin,colaborador")]
     public class TareasController : ControllerBase
     {
-        private readonly AppDbContext _context;
         private readonly TareaService _tareaService;
-        private readonly IHttpContextAccessor _httpContext;
 
-        public TareasController(AppDbContext context, TareaService tareaService, IHttpContextAccessor httpContext)
+        public TareasController(TareaService tareaService)
         {
-            _context = context;
             _tareaService = tareaService;
-            _httpContext = httpContext;
         }
 
-        // 1. Crear nueva tarea
-        [HttpPost]
-        public async Task<ActionResult<Tarea>> CrearTarea(CreateTareaDto dto)
-        {
-            var empresaId = GetEmpresaIdFromToken();
-            if (empresaId == null) return Unauthorized();
-
-            var tarea = await _tareaService.CrearTareaAsync(dto, empresaId.Value);
-            if (tarea == null)
-                return BadRequest("El proyecto no existe o no pertenece a tu empresa.");
-
-            return CreatedAtAction(nameof(ObtenerDetalle), new { tareaId = tarea.Id }, tarea);
-        }
-
-        // 2. Obtener tareas de un proyecto
         [HttpGet("por-proyecto/{proyectoId}")]
-        public async Task<ActionResult<List<Tarea>>> ObtenerTareasPorProyecto(int proyectoId)
+        public async Task<IActionResult> ObtenerTareasPorProyecto(int proyectoId)
         {
             var empresaId = GetEmpresaIdFromToken();
             if (empresaId == null) return Unauthorized();
@@ -48,52 +28,8 @@ namespace TaskTracker.Controllers
             var tareas = await _tareaService.ObtenerTareasPorProyectoAsync(proyectoId, empresaId.Value);
             return Ok(tareas);
         }
-
-        // 3. Asignar colaboradores a una tarea
-        [HttpPost("{tareaId}/asignar-colaboradores")]
-        public async Task<IActionResult> AsignarColaboradores(int tareaId, [FromBody] List<int> usuarioIds)
-        {
-            var empresaId = GetEmpresaIdFromToken();
-            if (empresaId == null) return Unauthorized();
-
-            var exito = await _tareaService.AsignarColaboradoresATareaAsync(tareaId, usuarioIds, empresaId.Value);
-            if (!exito)
-                return BadRequest("Tarea no encontrada o usuarios inválidos.");
-
-            return Ok("Colaboradores asignados a la tarea.");
-        }
-
-        // 4. Cambiar estado de tarea
-        [HttpPatch("{tareaId}/estado")]
-        public async Task<IActionResult> CambiarEstadoTarea(int tareaId, [FromBody] CambiarEstadoTareaDto dto)
-        {
-            var empresaId = GetEmpresaIdFromToken();
-            if (empresaId == null) return Unauthorized();
-
-            var exito = await _tareaService.CambiarEstadoTareaAsync(tareaId, dto.NuevoEstado, empresaId.Value);
-            if (!exito)
-                return BadRequest("Tarea no encontrada o no pertenece a la empresa.");
-
-            return Ok("Estado de tarea actualizado.");
-        }
-
-        // 5. Eliminar tarea
-        [HttpDelete("{tareaId}")]
-        public async Task<IActionResult> EliminarTarea(int tareaId)
-        {
-            var empresaId = GetEmpresaIdFromToken();
-            if (empresaId == null) return Unauthorized();
-
-            var exito = await _tareaService.EliminarTareaAsync(tareaId, empresaId.Value);
-            if (!exito)
-                return NotFound("Tarea no encontrada o no pertenece a tu empresa.");
-
-            return NoContent();
-        }
-
-        // 6. Obtener detalle completo de tarea (para el modal)
         [HttpGet("{tareaId}")]
-        public async Task<IActionResult> ObtenerDetalle(int tareaId)
+        public async Task<IActionResult> ObtenerDetalleTarea(int tareaId)
         {
             var empresaId = GetEmpresaIdFromToken();
             if (empresaId == null) return Unauthorized();
@@ -101,11 +37,32 @@ namespace TaskTracker.Controllers
             var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
             if (tarea == null) return NotFound();
 
-            var tareaDto = MapToTareaDetalleDto(tarea);
+            // Mapear comentarios a un nuevo DTO o anónimo
+            var comentariosConNombre = tarea.Comentarios.Select(c => new
+            {
+                c.Id,
+                c.TareaId,
+                c.ComentarioTexto,
+                c.FechaComentario,
+                UsuarioNombre = c.Usuario != null ? $"{c.Usuario.Name} {c.Usuario.Lastname}" : "Desconocido"
+            }).ToList();
+
+            // Retornar tarea con comentarios mapeados
+            var tareaDto = new
+            {
+                tarea.Id,
+                tarea.Descripcion,
+                tarea.Ubicacion,
+                tarea.Estado,
+                tarea.FechaInicioEstimado,
+                tarea.FechaFinEstimado,
+                Comentarios = comentariosConNombre
+            };
+
             return Ok(tareaDto);
         }
 
-        // 7. Agregar comentario a tarea
+
         [HttpPost("{tareaId}/comentarios")]
         public async Task<IActionResult> AgregarComentario(int tareaId, [FromBody] ComentarioDto comentarioDto)
         {
@@ -113,51 +70,61 @@ namespace TaskTracker.Controllers
             var usuarioId = GetUsuarioIdFromToken();
             if (empresaId == null || usuarioId == null) return Unauthorized();
 
-            // Crear el comentario a partir del DTO
-            var comentario = new TareaComentario
+            var resultado = await _tareaService.AgregarComentarioAsync(
+                tareaId, usuarioId.Value, comentarioDto.ComentarioTexto, empresaId.Value
+            );
+
+            if (resultado is null)
+                return BadRequest("No se pudo agregar el comentario.");
+
+            var (comentario, usuarioNombre) = resultado.Value;
+
+            Console.WriteLine($"[DEBUG] UsuarioId desde token: {usuarioId.Value}, UsuarioNombre: {usuarioNombre}");
+
+            return Ok(new
             {
-                TareaId = tareaId,
-                ComentarioTexto = comentarioDto.ComentarioTexto,
-                UsuarioId = usuarioId.Value,
-                FechaComentario = DateTime.UtcNow
-            };
-
-            // Guardar el comentario en la base de datos
-            _context.TareaComentarios.Add(comentario);
-            await _context.SaveChangesAsync();
-
-            return Ok(comentario); // Puedes devolver el comentario completo si es necesario
+                comentario.Id,
+                comentario.TareaId,
+                comentario.ComentarioTexto,
+                comentario.FechaComentario,
+                UsuarioNombre = usuarioNombre
+            });
         }
 
-        // 8. Actualizar toda la tarea (no solo el estado)
-        [HttpPut("{tareaId}")]
-        public async Task<IActionResult> ActualizarTarea(int tareaId, [FromBody] UpdateTareaDto tareaDto)
+        [HttpPatch("{tareaId}/estado")]
+        public async Task<IActionResult> CambiarEstadoTarea(int tareaId, [FromBody] EstadoTarea nuevoEstado)
         {
             var empresaId = GetEmpresaIdFromToken();
             if (empresaId == null) return Unauthorized();
 
-            var tarea = await _context.Tareas.FindAsync(tareaId);
-            if (tarea == null) return NotFound("Tarea no encontrada.");
-
-            // Actualizamos los valores de la tarea con el DTO recibido
-            tarea.Descripcion = tareaDto.Descripcion;
-            tarea.Ubicacion = tareaDto.Ubicacion;
-            tarea.FechaInicioEstimado = tareaDto.FechaInicioEstimado;
-            tarea.FechaFinEstimado = tareaDto.FechaFinEstimado;
-            tarea.Prioridad = tareaDto.Prioridad;
-            tarea.AttachmentRequerido = tareaDto.AttachmentRequerido;
-            tarea.UbicacionRequeridaAlCerrar = tareaDto.UbicacionRequeridaAlCerrar;
-
-            // Guardar los cambios en la base de datos
-            _context.Tareas.Update(tarea);
-            await _context.SaveChangesAsync();
-
-            return Ok(tarea); // Retornar la tarea actualizada
+            var exito = await _tareaService.CambiarEstadoTareaAsync(tareaId, nuevoEstado, empresaId.Value);
+            if (!exito) return BadRequest();
+            return NoContent();
         }
 
-        // -----------------------
-        // Métodos privados
-        // -----------------------
+        [HttpDelete("{tareaId}")]
+        public async Task<IActionResult> EliminarTarea(int tareaId)
+        {
+            var empresaId = GetEmpresaIdFromToken();
+            if (empresaId == null) return Unauthorized();
+
+            var exito = await _tareaService.EliminarTareaAsync(tareaId, empresaId.Value);
+            if (!exito) return NotFound();
+            return NoContent();
+        }
+
+        [HttpPost("{tareaId}/asignar")]
+        public async Task<IActionResult> AsignarColaboradores(int tareaId, [FromBody] List<int> usuarioIds)
+        {
+            var empresaId = GetEmpresaIdFromToken();
+            if (empresaId == null) return Unauthorized();
+
+            var exito = await _tareaService.AsignarColaboradoresATareaAsync(tareaId, usuarioIds, empresaId.Value);
+            if (!exito) return BadRequest();
+            return NoContent();
+        }
+
+        // --- Helpers para claims ---
         private int? GetEmpresaIdFromToken()
         {
             var empresaClaim = User.FindFirst("empresaId")?.Value;
@@ -166,42 +133,39 @@ namespace TaskTracker.Controllers
 
         private int? GetUsuarioIdFromToken()
         {
-            var usuarioClaim = User.FindFirst("usuarioId")?.Value;
+            var usuarioClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return int.TryParse(usuarioClaim, out var id) ? id : null;
         }
-
-        private TareaDetalleDto MapToTareaDetalleDto(Tarea tarea)
+    }
+    
+    [HttpPost("{tareaId}/adjuntos")]
+        public async Task<IActionResult> SubirAdjunto(int tareaId, IFormFile archivo)
         {
-            return new TareaDetalleDto
+            var empresaId = GetEmpresaIdFromToken();
+            if (empresaId == null) return Unauthorized();
+
+            var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
+            if (tarea == null) return NotFound();
+
+            if (archivo == null || archivo.Length == 0)
+                return BadRequest("Archivo inválido");
+
+            // Guardar archivo en carpeta local (o storage)
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
+            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+            var archivoNombre = $"{Guid.NewGuid()}_{archivo.FileName}";
+            var filePath = Path.Combine(uploadsFolder, archivoNombre);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
             {
-                Id = tarea.Id,
-                Descripcion = tarea.Descripcion,
-                Ubicacion = tarea.Ubicacion,
-                FechaInicioEstimado = tarea.FechaInicioEstimado,
-                FechaFinEstimado = tarea.FechaFinEstimado,
-                Prioridad = tarea.Prioridad,
-                Estado = tarea.Estado,
-                Comentarios = tarea.Comentarios.Select(c => new ComentarioDto
-                {
-                    // Aquí accedemos al nombre del usuario desde la relación
-                    UsuarioNombre = c.Usuario?.Name ?? "Desconocido", // Si no hay usuario, mostramos "Desconocido"
-                    ComentarioTexto = c.ComentarioTexto,
-                    FechaComentario = c.FechaComentario
-                }).ToList(),
-                SubTareas = tarea.SubTareas.Select(st => new SubTareaDto
-                {
-                    Id = st.Id,
-                    Descripcion = st.Descripcion,
-                    Completada = st.Completada
-                }).ToList(),
-                Adjuntos = tarea.Adjuntos.Select(a => new AdjuntoDto
-                {
-                    Id = a.Id,
-                    ArchivoUrl = a.ArchivoUrl,
-                    NombreArchivo = a.NombreArchivo,
-                    FechaSubida = a.FechaSubida
-                }).ToList()
-            };
+                await archivo.CopyToAsync(stream);
+            }
+
+            // Guardar registro en base de datos
+            var adjunto = await _tareaService.AgregarAdjuntoAsync(tareaId, archivoNombre, archivo.FileName);
+
+            return Ok(adjunto);
         }
     }
 }

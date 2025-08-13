@@ -56,4 +56,15 @@ public class EmpresasController : ControllerBase
         if (!eliminado) return NotFound();
         return NoContent();
     }
+
+// EmpresasController
+[HttpGet("total")]
+public async Task<ActionResult<int>> GetTotalEmpresas()
+{
+    int total = await _service.ContarEmpresasAsync();
+    return Ok(total);
+}
+
+
+
 }

@@ -1,11 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using TaskTracker.DTOs;
 using TaskTracker.Models;
 using TaskTracker.Services;
-
-namespace TaskTracker.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -19,7 +16,19 @@ public class ProyectosController : ControllerBase
         _proyectoService = proyectoService;
     }
 
-    // Crear un proyecto (admin_empresa o superadmin)
+    // GET: api/proyectos
+    [HttpGet]
+    public async Task<ActionResult<List<Proyecto>>> ObtenerProyectos()
+    {
+        var empresaId = GetEmpresaIdFromToken();
+        if (empresaId == null)
+            return Unauthorized("Empresa no identificada en el token.");
+
+        var proyectos = await _proyectoService.ObtenerProyectosPorEmpresaAsync(empresaId.Value);
+        return Ok(proyectos);
+    }
+
+    // POST: api/proyectos
     [HttpPost]
     public async Task<ActionResult<Proyecto>> CrearProyecto(CreateProyectoDto dto)
     {
@@ -31,26 +40,22 @@ public class ProyectosController : ControllerBase
         return CreatedAtAction(nameof(ObtenerProyectos), new { id = proyecto.Id }, proyecto);
     }
 
-    // Obtener todos los proyectos de la empresa
-    [HttpGet]
-    public async Task<ActionResult<List<Proyecto>>> ObtenerProyectos()
+    // DELETE: api/proyectos/{id}
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> EliminarProyecto(int id)
     {
         var empresaId = GetEmpresaIdFromToken();
-        Console.WriteLine($"[DEBUG] empresaId desde token: {empresaId}");
         if (empresaId == null)
             return Unauthorized("Empresa no identificada en el token.");
 
-        var proyectos = await _proyectoService.ObtenerProyectosPorEmpresaAsync(empresaId.Value);
-        return Ok(proyectos);
+        var exito = await _proyectoService.EliminarProyectoAsync(id, empresaId.Value);
+        if (!exito)
+            return NotFound("Proyecto no encontrado o no pertenece a tu empresa.");
+
+        return NoContent();
     }
 
-    private int? GetEmpresaIdFromToken()
-    {
-        var empresaClaim = User.FindFirst("empresaId")?.Value;
-        return int.TryParse(empresaClaim, out var id) ? id : null;
-    }
-
-    // asignar colaboradores al proyecto
+    // POST: api/proyectos/asignar-colaboradores
     [HttpPost("asignar-colaboradores")]
     public async Task<IActionResult> AsignarColaboradores([FromBody] AsignarColaboradoresProyectoDto dto)
     {
@@ -64,26 +69,22 @@ public class ProyectosController : ControllerBase
 
         return Ok("Colaboradores asignados correctamente.");
     }
-    
-[HttpDelete("{id}")]
-public async Task<IActionResult> EliminarProyecto(int id)
-{
-    var empresaId = GetEmpresaIdFromToken();
-    if (empresaId == null)
-        return Unauthorized("Empresa no identificada en el token.");
 
-    Console.WriteLine($"Intentando eliminar proyecto {id} de empresa {empresaId}");
-
-    var exito = await _proyectoService.EliminarProyectoAsync(id, empresaId.Value);
-    if (!exito)
+    // ✅ Nuevo endpoint: total de proyectos por empresa
+    [HttpGet("total")]
+    public async Task<ActionResult<int>> GetTotalProyectos()
     {
-        Console.WriteLine($"No se encontró proyecto {id} o no pertenece a empresa {empresaId}");
-        return NotFound("Proyecto no encontrado o no pertenece a tu empresa.");
+        var empresaId = GetEmpresaIdFromToken();
+        if (empresaId == null)
+            return Unauthorized("Empresa no identificada en el token.");
+
+        int total = await _proyectoService.ContarProyectosPorEmpresaAsync(empresaId.Value);
+        return Ok(total);
     }
 
-    Console.WriteLine($"Proyecto {id} eliminado correctamente");
-    return NoContent(); // 204 sin contenido
-}
-
-
+    private int? GetEmpresaIdFromToken()
+    {
+        var empresaClaim = User.FindFirst("empresaId")?.Value;
+        return int.TryParse(empresaClaim, out var id) ? id : null;
+    }
 }

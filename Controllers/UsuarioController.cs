@@ -9,6 +9,7 @@ namespace TaskTracker.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class UsuariosController : ControllerBase
 {
     private readonly UsuarioService _service;
@@ -28,7 +29,6 @@ public class UsuariosController : ControllerBase
 
     // Obtener usuario por ID
     [HttpGet("{id}")]
-    [Authorize]
     public async Task<ActionResult<Usuario>> ObtenerUsuarioPorId(int id)
     {
         var usuario = await _service.ObtenerUsuarioPorIdAsync(id);
@@ -38,33 +38,57 @@ public class UsuariosController : ControllerBase
         return Ok(usuario);
     }
 
-    // Obtener todos los usuarios (solo superadmin)
-[HttpGet]
-[Authorize(Roles = "superadmin,admin_empresa")]
-public async Task<ActionResult<IEnumerable<Usuario>>> ObtenerUsuarios()
-{
-    var rol = User.FindFirst(ClaimTypes.Role)?.Value;
-    var empresaIdStr = User.FindFirst("empresaId")?.Value;
-
-    if (rol == "superadmin")
+    // Obtener todos los usuarios (solo superadmin o admin_empresa)
+    [HttpGet]
+    [Authorize(Roles = "superadmin,admin_empresa")]
+    public async Task<ActionResult<IEnumerable<Usuario>>> ObtenerUsuarios()
     {
-        var usuarios = await _service.ObtenerTodosAsync();
-        return Ok(usuarios);
+        var rol = User.FindFirst(ClaimTypes.Role)?.Value;
+        var empresaIdStr = User.FindFirst("empresaId")?.Value;
+
+        if (rol == "superadmin")
+        {
+            var usuarios = await _service.ObtenerTodosAsync();
+            return Ok(usuarios);
+        }
+
+        if (rol == "admin_empresa" && int.TryParse(empresaIdStr, out var empresaId))
+        {
+            var colaboradores = await _service.ObtenerColaboradoresPorEmpresaAsync(empresaId);
+            return Ok(colaboradores);
+        }
+
+        return Forbid();
     }
 
-    if (rol == "admin_empresa" && int.TryParse(empresaIdStr, out var empresaId))
+    // Obtener colaboradores de la empresa del usuario autenticado
+    [HttpGet("colaboradores")]
+    [Authorize(Roles = "admin_empresa,superadmin")]
+    public async Task<ActionResult<IEnumerable<Usuario>>> ObtenerColaboradores()
     {
+        var empresaIdStr = User.FindFirst("empresaId")?.Value;
+        if (!int.TryParse(empresaIdStr, out var empresaId))
+            return Unauthorized("Empresa no encontrada en el token.");
+
         var colaboradores = await _service.ObtenerColaboradoresPorEmpresaAsync(empresaId);
         return Ok(colaboradores);
     }
 
-    return Forbid();
-}
+    // ✅ Nuevo endpoint: total de colaboradores por empresa
+    [HttpGet("total-colaboradores")]
+    [Authorize(Roles = "admin_empresa,superadmin")]
+    public async Task<ActionResult<int>> GetTotalColaboradores()
+    {
+        var empresaIdStr = User.FindFirst("empresaId")?.Value;
+        if (!int.TryParse(empresaIdStr, out var empresaId))
+            return Unauthorized("Empresa no encontrada en el token.");
 
+        int total = await _service.ContarColaboradoresPorEmpresaAsync(empresaId);
+        return Ok(total);
+    }
 
-    // Obtener el perfil del usuario autenticado
+    // Obtener perfil del usuario autenticado
     [HttpGet("perfil")]
-    [Authorize]
     public async Task<IActionResult> ObtenerPerfil()
     {
         var idStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -98,7 +122,6 @@ public async Task<ActionResult<IEnumerable<Usuario>>> ObtenerUsuarios()
         return Ok(actualizado);
     }
 
-
     [HttpDelete("{id}")]
     [Authorize(Roles = "superadmin")]
     public async Task<IActionResult> EliminarUsuario(int id)
@@ -110,17 +133,4 @@ public async Task<ActionResult<IEnumerable<Usuario>>> ObtenerUsuarios()
         await _service.EliminarUsuarioAsync(id);
         return NoContent();
     }
-    // Obtener colaboradores de la empresa del usuario autenticado
-    [HttpGet("colaboradores")]
-    [Authorize(Roles = "admin_empresa,superadmin")]
-    public async Task<ActionResult<IEnumerable<Usuario>>> ObtenerColaboradores()
-    {
-        var empresaIdStr = User.FindFirst("empresaId")?.Value;
-        if (!int.TryParse(empresaIdStr, out var empresaId))
-            return Unauthorized("Empresa no encontrada en el token.");
-
-        var colaboradores = await _service.ObtenerColaboradoresPorEmpresaAsync(empresaId);
-        return Ok(colaboradores);
-}
-
 }

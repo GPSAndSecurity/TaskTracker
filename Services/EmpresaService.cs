@@ -57,4 +57,11 @@ public class EmpresaService
         await _context.SaveChangesAsync();
         return true;
     }
+
+public async Task<int> ContarEmpresasAsync()
+{
+    return await _context.Empresas.CountAsync();
+}
+
+
 }

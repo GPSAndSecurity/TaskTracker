@@ -11,9 +11,10 @@ namespace TaskTracker.Services
 
         public ClienteService(AppDbContext context)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
+        // Obtener lista de clientes por empresa
         public async Task<List<Cliente>> ObtenerClientesPorEmpresaAsync(int empresaId)
         {
             return await _context.Clientes
@@ -21,6 +22,7 @@ namespace TaskTracker.Services
                 .ToListAsync();
         }
 
+        // Crear cliente
         public async Task<Cliente> CrearClienteAsync(CreateClienteDto dto)
         {
             var cliente = new Cliente
@@ -33,15 +35,16 @@ namespace TaskTracker.Services
 
             _context.Clientes.Add(cliente);
             await _context.SaveChangesAsync();
-
             return cliente;
         }
 
+        // Obtener cliente por id
         public async Task<Cliente?> ObtenerClientePorIdAsync(int id)
         {
             return await _context.Clientes.FindAsync(id);
         }
 
+        // Actualizar cliente
         public async Task<bool> ActualizarClienteAsync(int id, UpdateClienteDto dto)
         {
             var cliente = await ObtenerClientePorIdAsync(id);
@@ -55,6 +58,7 @@ namespace TaskTracker.Services
             return true;
         }
 
+        // Eliminar cliente
         public async Task<bool> EliminarClienteAsync(int id)
         {
             var cliente = await ObtenerClientePorIdAsync(id);
@@ -63,6 +67,14 @@ namespace TaskTracker.Services
             _context.Clientes.Remove(cliente);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        // ✅ Contar clientes por empresa
+        public async Task<int> ContarClientesPorEmpresaAsync(int empresaId)
+        {
+            return await _context.Clientes
+                                 .Where(c => c.EmpresaId == empresaId)
+                                 .CountAsync();
         }
     }
 }

@@ -96,4 +96,11 @@ public class UsuarioService
             .Where(u => u.EmpresaId == empresaId && u.Rol == "colaborador")
             .ToListAsync();
     }
+
+ public async Task<int> ContarColaboradoresPorEmpresaAsync(int empresaId)
+{
+    return await _context.Usuarios
+        .Where(u => u.EmpresaId == empresaId && u.Rol == "colaborador")
+        .CountAsync();
+}
 }

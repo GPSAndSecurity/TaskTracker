@@ -49,7 +49,26 @@ public class TareaService
 
         return await _context.Tareas
             .Where(t => t.ProyectoId == proyectoId)
+            .Include(t => t.Comentarios)
+                .ThenInclude(c => c.Usuario)
+            .Include(t => t.Asignados)
+                .ThenInclude(a => a.Usuario)
             .ToListAsync();
+    }
+
+    public async Task<Tarea?> ObtenerTareaDetalleAsync(int tareaId, int empresaId)
+    {
+        var tarea = await _context.Tareas
+            .Include(t => t.Comentarios)
+                .ThenInclude(c => c.Usuario)
+            .Include(t => t.Asignados)
+                .ThenInclude(a => a.Usuario)
+            .Include(t => t.Adjuntos)
+            .Include(t => t.SubTareas)
+            .Include(t => t.Proyecto)
+            .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto!.EmpresaId == empresaId);
+
+        return tarea;
     }
 
     public async Task<bool> AsignarColaboradoresATareaAsync(int tareaId, List<int> usuarioIds, int empresaId)
@@ -105,43 +124,51 @@ public class TareaService
         return true;
     }
 
-    public async Task<Tarea?> ObtenerTareaDetalleAsync(int tareaId, int empresaId)
+ public async Task<(TareaComentario comentario, string usuarioNombre)?> AgregarComentarioAsync(
+    int tareaId, int usuarioId, string comentarioTexto, int empresaId)
+{
+    // Verificar que el usuario pertenece a la empresa
+    var usuario = await _context.Usuarios
+        .FirstOrDefaultAsync(u => u.Id == usuarioId && u.EmpresaId == empresaId);
+
+    if (usuario == null) return null;
+
+    // Verificar que la tarea existe (sin campo EmpresaId)
+    var tarea = await _context.Tareas
+        .FirstOrDefaultAsync(t => t.Id == tareaId);
+
+    if (tarea == null) return null;
+
+    var comentario = new TareaComentario
     {
-        var tarea = await _context.Tareas
-            .Include(t => t.Comentarios)
-                .ThenInclude(c => c.Usuario)
-            .Include(t => t.Asignados)
-                .ThenInclude(a => a.Usuario)
-            .Include(t => t.Adjuntos)
-            .Include(t => t.SubTareas)
-            .Include(t => t.Proyecto)
-            .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto!.EmpresaId == empresaId);
+        TareaId = tareaId,
+        UsuarioId = usuarioId,
+        ComentarioTexto = comentarioTexto,
+        FechaComentario = DateTime.UtcNow
+    };
 
-        return tarea;
-    }
+    _context.TareaComentarios.Add(comentario);
+    await _context.SaveChangesAsync();
 
-    public async Task<TareaComentario?> AgregarComentarioAsync(int tareaId, int usuarioId, string texto, int empresaId)
+    var usuarioNombre = $"{usuario.Name} {usuario.Lastname}";
+
+    return (comentario, usuarioNombre);
+}
+
+public async Task<TareaAdjunto> AgregarAdjuntoAsync(int tareaId, string archivoUrl, string nombreArchivo)
+{
+    var adjunto = new TareaAdjunto
     {
-        var tarea = await _context.Tareas
-            .Include(t => t.Proyecto)
-            .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto!.EmpresaId == empresaId);
+        TareaId = tareaId,
+        ArchivoUrl = $"/Uploads/{archivoUrl}", // ruta relativa para frontend
+        NombreArchivo = nombreArchivo,
+        FechaSubida = DateTime.UtcNow
+    };
 
-        if (tarea == null) return null;
+    _context.TareaAdjuntos.Add(adjunto);
+    await _context.SaveChangesAsync();
 
-        var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == usuarioId && u.EmpresaId == empresaId);
-        if (usuario == null) return null;
+    return adjunto;
+}
 
-        var comentario = new TareaComentario
-        {
-            TareaId = tareaId,
-            UsuarioId = usuarioId,
-            ComentarioTexto = texto,
-            FechaComentario = DateTime.UtcNow
-        };
-
-        _context.TareaComentarios.Add(comentario);
-        await _context.SaveChangesAsync();
-
-        return comentario;
-    }
 }

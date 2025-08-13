@@ -1,13 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using TaskTracker.DTOs;
 using TaskTracker.Models;
 using TaskTracker.Services;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize] 
+[Authorize]
 public class ClientesController : ControllerBase
 {
     private readonly ClienteService _service;
@@ -27,7 +26,7 @@ public class ClientesController : ControllerBase
         return Ok(clientes);
     }
 
-    // GET: api/clientes/5
+    // GET: api/clientes/{id}
     [HttpGet("{id}")]
     [Authorize(Roles = "admin_empresa,superadmin")]
     public async Task<ActionResult<Cliente>> GetClientePorId(int id)
@@ -49,7 +48,7 @@ public class ClientesController : ControllerBase
         return CreatedAtAction(nameof(GetClientePorId), new { id = cliente.Id }, cliente);
     }
 
-    // PUT: api/clientes/5
+    // PUT: api/clientes/{id}
     [HttpPut("{id}")]
     [Authorize(Roles = "admin_empresa,superadmin")]
     public async Task<IActionResult> ActualizarCliente(int id, UpdateClienteDto dto)
@@ -64,7 +63,7 @@ public class ClientesController : ControllerBase
         return NoContent();
     }
 
-    // DELETE: api/clientes/5
+    // DELETE: api/clientes/{id}
     [HttpDelete("{id}")]
     [Authorize(Roles = "admin_empresa,superadmin")]
     public async Task<IActionResult> EliminarCliente(int id)
@@ -79,7 +78,16 @@ public class ClientesController : ControllerBase
         return NoContent();
     }
 
-    //Obyener empresaId desde el token
+    // ✅ Nuevo endpoint: total de clientes por empresa
+    [HttpGet("total")]
+    [Authorize(Roles = "admin_empresa,superadmin")]
+    public async Task<ActionResult<int>> GetTotalClientes()
+    {
+        int empresaId = ObtenerEmpresaIdDesdeToken();
+        int total = await _service.ContarClientesPorEmpresaAsync(empresaId);
+        return Ok(total);
+    }
+
     private int ObtenerEmpresaIdDesdeToken()
     {
         var claim = User.Claims.FirstOrDefault(c => c.Type == "empresaId")?.Value;
