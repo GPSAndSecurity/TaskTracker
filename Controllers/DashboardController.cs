@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TaskTracker.Data;
 
+
 [Route("api/[controller]")]
 [ApiController]
 public class DashboardController : ControllerBase

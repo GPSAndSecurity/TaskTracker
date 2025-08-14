@@ -136,7 +136,7 @@ namespace TaskTracker.Controllers
             var usuarioClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return int.TryParse(usuarioClaim, out var id) ? id : null;
         }
-    }
+    
     
     [HttpPost("{tareaId}/adjuntos")]
         public async Task<IActionResult> SubirAdjunto(int tareaId, IFormFile archivo)
