@@ -55,6 +55,8 @@ public class ProyectosController : ControllerBase
         return NoContent();
     }
 
+
+
     // POST: api/proyectos/asignar-colaboradores
     [HttpPost("asignar-colaboradores")]
     public async Task<IActionResult> AsignarColaboradores([FromBody] AsignarColaboradoresProyectoDto dto)
@@ -87,4 +89,16 @@ public class ProyectosController : ControllerBase
         var empresaClaim = User.FindFirst("empresaId")?.Value;
         return int.TryParse(empresaClaim, out var id) ? id : null;
     }
+    
+[HttpGet("con-avance")]
+public async Task<ActionResult<IEnumerable<ProyectoConAvanceDto>>> GetProyectosConAvance()
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null)
+        return Unauthorized("Empresa no identificada.");
+
+    var proyectos = await _proyectoService.ObtenerProyectosConAvanceAsync(empresaId.Value);
+    return Ok(proyectos);
+}
+
 }
