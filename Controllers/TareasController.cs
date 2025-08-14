@@ -136,9 +136,44 @@ namespace TaskTracker.Controllers
             var usuarioClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return int.TryParse(usuarioClaim, out var id) ? id : null;
         }
-    
-    
-    [HttpPost("{tareaId}/adjuntos")]
+        [HttpPost]
+        public async Task<IActionResult> CrearTarea([FromBody] CreateTareaDto dto)
+        {
+            var empresaId = GetEmpresaIdFromToken();
+            if (empresaId == null) return Unauthorized();
+
+            var tarea = await _tareaService.CrearTareaAsync(dto, empresaId.Value);
+            if (tarea == null) return BadRequest("No se pudo crear la tarea.");
+
+            return CreatedAtAction(nameof(ObtenerDetalleTarea), new { tareaId = tarea.Id }, tarea);
+        }
+
+[HttpPut("{tareaId}")]
+public async Task<IActionResult> ActualizarTarea(int tareaId, [FromBody] UpdateTareaDto dto)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null) return Unauthorized();
+
+    var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
+    if (tarea == null) return NotFound("Tarea no encontrada.");
+
+    // Actualizar campos
+    tarea.Descripcion = dto.Descripcion;
+    tarea.Ubicacion = dto.Ubicacion;
+    tarea.FechaInicioEstimado = dto.FechaInicioEstimado;
+    tarea.FechaFinEstimado = dto.FechaFinEstimado;
+    tarea.Prioridad = dto.Prioridad;
+    tarea.AttachmentRequerido = dto.AttachmentRequerido;
+    tarea.UbicacionRequeridaAlCerrar = dto.UbicacionRequeridaAlCerrar;
+
+    await _tareaService.ActualizarTareaAsync(tarea);
+
+    return Ok(tarea);
+}
+
+
+
+        [HttpPost("{tareaId}/adjuntos")]
         public async Task<IActionResult> SubirAdjunto(int tareaId, IFormFile archivo)
         {
             var empresaId = GetEmpresaIdFromToken();
@@ -168,4 +203,6 @@ namespace TaskTracker.Controllers
             return Ok(adjunto);
         }
     }
+    
+    
 }

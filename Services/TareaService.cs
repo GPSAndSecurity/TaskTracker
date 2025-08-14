@@ -124,51 +124,58 @@ public class TareaService
         return true;
     }
 
- public async Task<(TareaComentario comentario, string usuarioNombre)?> AgregarComentarioAsync(
-    int tareaId, int usuarioId, string comentarioTexto, int empresaId)
-{
-    // Verificar que el usuario pertenece a la empresa
-    var usuario = await _context.Usuarios
-        .FirstOrDefaultAsync(u => u.Id == usuarioId && u.EmpresaId == empresaId);
-
-    if (usuario == null) return null;
-
-    // Verificar que la tarea existe (sin campo EmpresaId)
-    var tarea = await _context.Tareas
-        .FirstOrDefaultAsync(t => t.Id == tareaId);
-
-    if (tarea == null) return null;
-
-    var comentario = new TareaComentario
+    public async Task<(TareaComentario comentario, string usuarioNombre)?> AgregarComentarioAsync(
+       int tareaId, int usuarioId, string comentarioTexto, int empresaId)
     {
-        TareaId = tareaId,
-        UsuarioId = usuarioId,
-        ComentarioTexto = comentarioTexto,
-        FechaComentario = DateTime.UtcNow
-    };
+        // Verificar que el usuario pertenece a la empresa
+        var usuario = await _context.Usuarios
+            .FirstOrDefaultAsync(u => u.Id == usuarioId && u.EmpresaId == empresaId);
 
-    _context.TareaComentarios.Add(comentario);
+        if (usuario == null) return null;
+
+        // Verificar que la tarea existe (sin campo EmpresaId)
+        var tarea = await _context.Tareas
+            .FirstOrDefaultAsync(t => t.Id == tareaId);
+
+        if (tarea == null) return null;
+
+        var comentario = new TareaComentario
+        {
+            TareaId = tareaId,
+            UsuarioId = usuarioId,
+            ComentarioTexto = comentarioTexto,
+            FechaComentario = DateTime.UtcNow
+        };
+
+        _context.TareaComentarios.Add(comentario);
+        await _context.SaveChangesAsync();
+
+        var usuarioNombre = $"{usuario.Name} {usuario.Lastname}";
+
+        return (comentario, usuarioNombre);
+    }
+
+    public async Task<TareaAdjunto> AgregarAdjuntoAsync(int tareaId, string archivoUrl, string nombreArchivo)
+    {
+        var adjunto = new TareaAdjunto
+        {
+            TareaId = tareaId,
+            ArchivoUrl = $"/Uploads/{archivoUrl}", // ruta relativa para frontend
+            NombreArchivo = nombreArchivo,
+            FechaSubida = DateTime.UtcNow
+        };
+
+        _context.TareaAdjuntos.Add(adjunto);
+        await _context.SaveChangesAsync();
+
+        return adjunto;
+    }
+
+public async Task ActualizarTareaAsync(Tarea tarea)
+{
+    _context.Tareas.Update(tarea);
     await _context.SaveChangesAsync();
-
-    var usuarioNombre = $"{usuario.Name} {usuario.Lastname}";
-
-    return (comentario, usuarioNombre);
 }
 
-public async Task<TareaAdjunto> AgregarAdjuntoAsync(int tareaId, string archivoUrl, string nombreArchivo)
-{
-    var adjunto = new TareaAdjunto
-    {
-        TareaId = tareaId,
-        ArchivoUrl = $"/Uploads/{archivoUrl}", // ruta relativa para frontend
-        NombreArchivo = nombreArchivo,
-        FechaSubida = DateTime.UtcNow
-    };
-
-    _context.TareaAdjuntos.Add(adjunto);
-    await _context.SaveChangesAsync();
-
-    return adjunto;
-}
 
 }
