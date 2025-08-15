@@ -72,7 +72,7 @@ public class ProyectosController : ControllerBase
         return Ok("Colaboradores asignados correctamente.");
     }
 
-    // ✅ Nuevo endpoint: total de proyectos por empresa
+    // total de proyectos por empresa
     [HttpGet("total")]
     public async Task<ActionResult<int>> GetTotalProyectos()
     {
@@ -90,15 +90,15 @@ public class ProyectosController : ControllerBase
         return int.TryParse(empresaClaim, out var id) ? id : null;
     }
     
-[HttpGet("con-avance")]
-public async Task<ActionResult<IEnumerable<ProyectoConAvanceDto>>> GetProyectosConAvance()
-{
-    var empresaId = GetEmpresaIdFromToken();
-    if (empresaId == null)
-        return Unauthorized("Empresa no identificada.");
+    [HttpGet("con-avance")]
+    public async Task<ActionResult<IEnumerable<ProyectoConAvanceDto>>> GetProyectosConAvance()
+    {
+        var empresaId = GetEmpresaIdFromToken();
+        if (empresaId == null)
+            return Unauthorized("Empresa no identificada.");
 
-    var proyectos = await _proyectoService.ObtenerProyectosConAvanceAsync(empresaId.Value);
-    return Ok(proyectos);
-}
+        var proyectos = await _proyectoService.ObtenerProyectosConAvanceAsync(empresaId.Value);
+        return Ok(proyectos);
+    }
 
 }

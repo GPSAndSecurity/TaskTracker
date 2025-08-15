@@ -156,8 +156,7 @@ public async Task<IActionResult> ActualizarTarea(int tareaId, [FromBody] UpdateT
 
     var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
     if (tarea == null) return NotFound("Tarea no encontrada.");
-
-    // Actualizar campos
+    
     tarea.Descripcion = dto.Descripcion;
     tarea.Ubicacion = dto.Ubicacion;
     tarea.FechaInicioEstimado = dto.FechaInicioEstimado;

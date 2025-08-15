@@ -78,7 +78,7 @@ public class ClientesController : ControllerBase
         return NoContent();
     }
 
-    // ✅ Nuevo endpoint: total de clientes por empresa
+    //  total de clientes por empresa
     [HttpGet("total")]
     [Authorize(Roles = "admin_empresa,superadmin")]
     public async Task<ActionResult<int>> GetTotalClientes()

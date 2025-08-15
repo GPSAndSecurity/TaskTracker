@@ -133,7 +133,7 @@ public class TareaService
 
         if (usuario == null) return null;
 
-        // Verificar que la tarea existe (sin campo EmpresaId)
+        // Verificar que la tarea existe
         var tarea = await _context.Tareas
             .FirstOrDefaultAsync(t => t.Id == tareaId);
 
@@ -160,7 +160,7 @@ public class TareaService
         var adjunto = new TareaAdjunto
         {
             TareaId = tareaId,
-            ArchivoUrl = $"/Uploads/{archivoUrl}", // ruta relativa para frontend
+            ArchivoUrl = $"/Uploads/{archivoUrl}", 
             NombreArchivo = nombreArchivo,
             FechaSubida = DateTime.UtcNow
         };
@@ -171,11 +171,11 @@ public class TareaService
         return adjunto;
     }
 
-public async Task ActualizarTareaAsync(Tarea tarea)
-{
-    _context.Tareas.Update(tarea);
-    await _context.SaveChangesAsync();
-}
+    public async Task ActualizarTareaAsync(Tarea tarea)
+    {
+        _context.Tareas.Update(tarea);
+        await _context.SaveChangesAsync();
+    }
 
 
 }

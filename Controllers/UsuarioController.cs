@@ -74,7 +74,7 @@ public class UsuariosController : ControllerBase
         return Ok(colaboradores);
     }
 
-    // ✅ Nuevo endpoint: total de colaboradores por empresa
+    //  total de colaboradores por empresa
     [HttpGet("total-colaboradores")]
     [Authorize(Roles = "admin_empresa,superadmin")]
     public async Task<ActionResult<int>> GetTotalColaboradores()

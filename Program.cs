@@ -84,21 +84,21 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Middleware de depuración para verificar que el token está llegando correctamente
-app.Use(async (context, next) =>
-{
-    var token = context.Request.Headers["Authorization"].ToString();
-    if (!string.IsNullOrEmpty(token))
-    {
-        Console.WriteLine("Token encontrado: " + token);
-    }
-    else
-    {
-        Console.WriteLine("No se encontró token.");
-    }
+// revisar si el token llego, solo es para confirmar pero no afeta el proceso 
+//app.Use(async (context, next) =>
+//{
+  //  var token = context.Request.Headers["Authorization"].ToString();
+    //if (!string.IsNullOrEmpty(token))
+    //{
+      //  Console.WriteLine("Token encontrado: " + token);
+   // }
+    //else
+    //{
+      //  Console.WriteLine("No se encontró token.");
+   // }
 
-    await next.Invoke(); // Continuamos con la ejecución normal
-});
+    //await next.Invoke(); // Continuamos con la ejecución normal
+//});
 
 //Para activar swagger 
 if (app.Environment.IsDevelopment())
@@ -111,8 +111,8 @@ app.UseHttpsRedirection();
 
 app.UseCors();
 
-app.UseAuthentication();  // Asegúrate de que el orden sea correcto
-app.UseAuthorization();   // Autorización después de autenticación
+app.UseAuthentication();  
+app.UseAuthorization();  
 
 app.MapControllers();
 

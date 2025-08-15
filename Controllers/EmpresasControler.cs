@@ -57,13 +57,13 @@ public class EmpresasController : ControllerBase
         return NoContent();
     }
 
-// EmpresasController
-[HttpGet("total")]
-public async Task<ActionResult<int>> GetTotalEmpresas()
-{
-    int total = await _service.ContarEmpresasAsync();
-    return Ok(total);
-}
+    // obtener el total de las empresas 
+    [HttpGet("total")]
+    public async Task<ActionResult<int>> GetTotalEmpresas()
+    {
+        int total = await _service.ContarEmpresasAsync();
+        return Ok(total);
+    }
 
 
 

@@ -76,39 +76,39 @@ namespace TaskTracker.Services
             await _context.SaveChangesAsync();
             return true;
         }
-// En ProyectoService.cs
-public async Task<List<ProyectoConAvanceDto>> ObtenerProyectosConAvanceAsync(int empresaId)
-{
-    var proyectos = await _context.Proyectos
-        .Where(p => p.EmpresaId == empresaId)
-        .Include(p => p.Tareas)
-        .ToListAsync();
+        // En ProyectoService.cs
+        public async Task<List<ProyectoConAvanceDto>> ObtenerProyectosConAvanceAsync(int empresaId)
+        {
+            var proyectos = await _context.Proyectos
+                .Where(p => p.EmpresaId == empresaId)
+                .Include(p => p.Tareas)
+                .ToListAsync();
 
-return proyectos.Select(p =>
-{
-    double porcentaje = 0;
-    if (p.Tareas.Any())
-    {
-        var totalTareas = p.Tareas.Count;
-        var tareasFinalizadas = p.Tareas.Count(t => t.Estado == EstadoTarea.Finalizada);
-        porcentaje = (double)tareasFinalizadas / totalTareas * 100;
-    }
+        return proyectos.Select(p =>
+        {
+            double porcentaje = 0;
+            if (p.Tareas.Any())
+            {
+                var totalTareas = p.Tareas.Count;
+                var tareasFinalizadas = p.Tareas.Count(t => t.Estado == EstadoTarea.Finalizada);
+                porcentaje = (double)tareasFinalizadas / totalTareas * 100;
+            }
 
-    return new ProyectoConAvanceDto
-    {
-        Id = p.Id,
-        Nombre = p.Nombre,
-        Descripcion = p.Descripcion,
-        FechaInicio = p.FechaInicio,
-        FechaFin = p.FechaFin,
-        PorcentajeAvance = Math.Round(porcentaje, 2)
-    };
-}).ToList();
+            return new ProyectoConAvanceDto
+            {
+                Id = p.Id,
+                Nombre = p.Nombre,
+                Descripcion = p.Descripcion,
+                FechaInicio = p.FechaInicio,
+                FechaFin = p.FechaFin,
+                PorcentajeAvance = Math.Round(porcentaje, 2)
+            };
+        }).ToList();
 
-}
+        }
 
 
-        // ✅ Contar proyectos por empresa
+        // Contar proyectos por empresa
         public async Task<int> ContarProyectosPorEmpresaAsync(int empresaId)
         {
             return await _context.Proyectos

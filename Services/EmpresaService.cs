@@ -58,10 +58,10 @@ public class EmpresaService
         return true;
     }
 
-public async Task<int> ContarEmpresasAsync()
-{
-    return await _context.Empresas.CountAsync();
-}
+    public async Task<int> ContarEmpresasAsync()
+    {
+        return await _context.Empresas.CountAsync();
+    }
 
 
 }

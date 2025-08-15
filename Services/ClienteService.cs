@@ -69,7 +69,7 @@ namespace TaskTracker.Services
             return true;
         }
 
-        // ✅ Contar clientes por empresa
+        // contar clientes por empresa
         public async Task<int> ContarClientesPorEmpresaAsync(int empresaId)
         {
             return await _context.Clientes
