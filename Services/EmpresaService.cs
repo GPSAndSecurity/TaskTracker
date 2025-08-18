@@ -12,16 +12,18 @@ public class EmpresaService
         _context = context;
     }
 
+
+    //Obtener empresas 
     public async Task<List<Empresa>> ObtenerTodasAsync()
     {
         return await _context.Empresas.ToListAsync();
     }
-
+        //encontrar empresa que pertenece a un id 
     public async Task<Empresa?> ObtenerPorIdAsync(int id)
     {
         return await _context.Empresas.FindAsync(id);
     }
-
+    //crear empresa
     public async Task<Empresa> CrearEmpresaAsync(CreateEmpresaDto dto)
     {
         var empresa = new Empresa
@@ -35,7 +37,7 @@ public class EmpresaService
 
         return empresa;
     }
-
+    //actualizar empresa
     public async Task<bool> ActualizarEmpresaAsync(int id, UpdateEmpresaDto dto)
     {
         var empresa = await _context.Empresas.FindAsync(id);
@@ -47,7 +49,7 @@ public class EmpresaService
         await _context.SaveChangesAsync();
         return true;
     }
-
+    //eliminar empresa
     public async Task<bool> EliminarEmpresaAsync(int id)
     {
         var empresa = await _context.Empresas.FindAsync(id);
@@ -57,7 +59,7 @@ public class EmpresaService
         await _context.SaveChangesAsync();
         return true;
     }
-
+    //contar la empresa (para hacer el dashboard)
     public async Task<int> ContarEmpresasAsync()
     {
         return await _context.Empresas.CountAsync();

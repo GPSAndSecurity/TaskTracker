@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
 using TaskTracker.Data;
 using TaskTracker.Services;
@@ -28,10 +29,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+
+            RoleClaimType = ClaimTypes.Role
         };
 
-        // Configuración de eventos de autenticación de JWT
+        // Eventos de autenticación JWT
         options.Events = new JwtBearerEvents
         {
             OnAuthenticationFailed = context =>
@@ -53,12 +56,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
 builder.Services.AddScoped<UsuarioService>();
 builder.Services.AddScoped<EmpresaService>();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<ProyectoService>();
 builder.Services.AddScoped<TareaService>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
@@ -68,7 +73,7 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.WriteIndented = true;
-        options.JsonSerializerOptions.PropertyNamingPolicy = null; 
+        options.JsonSerializerOptions.PropertyNamingPolicy = null;
     });
 
 // CORS 
@@ -76,7 +81,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:4200") 
+        policy.WithOrigins("http://localhost:4200")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -84,23 +89,14 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// revisar si el token llego, solo es para confirmar pero no afeta el proceso 
-//app.Use(async (context, next) =>
-//{
-  //  var token = context.Request.Headers["Authorization"].ToString();
-    //if (!string.IsNullOrEmpty(token))
-    //{
-      //  Console.WriteLine("Token encontrado: " + token);
-   // }
-    //else
-    //{
-      //  Console.WriteLine("No se encontró token.");
-   // }
+// Seed inicial para crear usuario admin si no existe
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    AppDbContext.Seed(context);
+}
 
-    //await next.Invoke(); // Continuamos con la ejecución normal
-//});
-
-//Para activar swagger 
+// Middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -111,8 +107,8 @@ app.UseHttpsRedirection();
 
 app.UseCors();
 
-app.UseAuthentication();  
-app.UseAuthorization();  
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

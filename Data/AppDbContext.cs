@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 using TaskTracker.Models;
 
 namespace TaskTracker.Data;
@@ -19,10 +21,9 @@ public class AppDbContext : DbContext
     public DbSet<TareaAdjunto> TareaAdjuntos { get; set; }
     public DbSet<TareaComentario> TareaComentarios { get; set; }
 
+    public DbSet<SubTarea> SubTareas { get; set; }
 
 
-
-//Crear las relaciones entre las tablas 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Usuario>().HasIndex(u => u.Email).IsUnique();
@@ -39,55 +40,120 @@ public class AppDbContext : DbContext
             .HasForeignKey(c => c.EmpresaId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Proyecto ↔ Colaboradores
         modelBuilder.Entity<ProyectoColaborador>()
             .HasKey(pc => pc.Id);
 
         modelBuilder.Entity<ProyectoColaborador>()
             .HasOne(pc => pc.Proyecto)
             .WithMany(p => p.Colaboradores)
-            .HasForeignKey(pc => pc.ProyectoId);
+            .HasForeignKey(pc => pc.ProyectoId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<ProyectoColaborador>()
             .HasOne(pc => pc.Usuario)
-            .WithMany()
-            .HasForeignKey(pc => pc.UsuarioId);
+            .WithMany(u => u.ProyectosAsignados)
+            .HasForeignKey(pc => pc.UsuarioId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-        // Tarea ↔ Asignados
         modelBuilder.Entity<TareaAsignado>()
             .HasKey(ta => ta.Id);
 
         modelBuilder.Entity<TareaAsignado>()
             .HasOne(ta => ta.Tarea)
             .WithMany(t => t.Asignados)
-            .HasForeignKey(ta => ta.TareaId);
+            .HasForeignKey(ta => ta.TareaId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<TareaAsignado>()
             .HasOne(ta => ta.Usuario)
             .WithMany()
-            .HasForeignKey(ta => ta.UsuarioId);
+            .HasForeignKey(ta => ta.UsuarioId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-        // Tarea ↔ Adjuntos
         modelBuilder.Entity<TareaAdjunto>()
             .HasKey(ta => ta.Id);
 
         modelBuilder.Entity<TareaAdjunto>()
             .HasOne(ta => ta.Tarea)
             .WithMany(t => t.Adjuntos)
-            .HasForeignKey(ta => ta.TareaId);
+            .HasForeignKey(ta => ta.TareaId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-        // Tarea ↔ Comentarios
         modelBuilder.Entity<TareaComentario>()
             .HasKey(tc => tc.Id);
 
         modelBuilder.Entity<TareaComentario>()
             .HasOne(tc => tc.Tarea)
             .WithMany(t => t.Comentarios)
-            .HasForeignKey(tc => tc.TareaId);
+            .HasForeignKey(tc => tc.TareaId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<TareaComentario>()
             .HasOne(tc => tc.Usuario)
             .WithMany()
-            .HasForeignKey(tc => tc.UsuarioId);
+            .HasForeignKey(tc => tc.UsuarioId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<SubTarea>()
+    .HasKey(st => st.Id);
+
+        modelBuilder.Entity<SubTarea>()
+            .HasOne(st => st.Tarea)
+            .WithMany(t => t.SubTareas)
+            .HasForeignKey(st => st.TareaId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+
+    }
+
+    // Método para agregar datos iniciales
+    public static void Seed(AppDbContext context)
+    {
+        context.Database.Migrate(); // Ejecuta migraciones pendientes
+
+        // Verificar si ya existe la empresa
+        if (!context.Empresas.Any(e => e.Id == 1))
+        {
+            context.Empresas.Add(new Empresa
+            {
+                Id = 1,
+                Nombre = "Empresa Principal"
+            });
+            context.SaveChanges();
+        }
+
+        // Verificar si ya existe un usuario superadmin
+        if (context.Usuarios.Any(u => u.Rol == "superadmin"))
+        {
+            Console.WriteLine("✅ Ya existe un usuario superadmin.");
+            return;
+        }
+
+        try
+        {
+            string HashPassword(string password)
+            {
+                using var sha256 = SHA256.Create();
+                return Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
+            }
+
+            var superadmin = new Usuario
+            {
+                Name = "Admin",
+                Lastname = "Principal",
+                Email = "admin@gpsandsecurity.com",
+                PasswordHash = HashPassword("admin123"),
+                Rol = "superadmin",
+                EmpresaId = 1
+            };
+
+            context.Usuarios.Add(superadmin);
+            context.SaveChanges();
+
+            Console.WriteLine("✅ Usuario superadmin creado correctamente.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error al crear usuario superadmin: {ex.Message}");
+        }
     }
 }

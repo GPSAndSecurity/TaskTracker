@@ -11,4 +11,6 @@ public class Usuario
 
     public int? EmpresaId { get; set; }
     public Empresa? Empresa { get; set; }
+    public List<ProyectoColaborador> ProyectosAsignados { get; set; } = new();
+
 }

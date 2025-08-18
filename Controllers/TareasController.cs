@@ -37,7 +37,6 @@ namespace TaskTracker.Controllers
             var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
             if (tarea == null) return NotFound();
 
-            // Mapear comentarios a un nuevo DTO o anónimo
             var comentariosConNombre = tarea.Comentarios.Select(c => new
             {
                 c.Id,
@@ -124,7 +123,7 @@ namespace TaskTracker.Controllers
             return NoContent();
         }
 
-        // --- Helpers para claims ---
+        // helpers para claim
         private int? GetEmpresaIdFromToken()
         {
             var empresaClaim = User.FindFirst("empresaId")?.Value;

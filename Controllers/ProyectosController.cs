@@ -89,7 +89,7 @@ public class ProyectosController : ControllerBase
         var empresaClaim = User.FindFirst("empresaId")?.Value;
         return int.TryParse(empresaClaim, out var id) ? id : null;
     }
-    
+
     [HttpGet("con-avance")]
     public async Task<ActionResult<IEnumerable<ProyectoConAvanceDto>>> GetProyectosConAvance()
     {
@@ -100,5 +100,13 @@ public class ProyectosController : ControllerBase
         var proyectos = await _proyectoService.ObtenerProyectosConAvanceAsync(empresaId.Value);
         return Ok(proyectos);
     }
+private int? GetUsuarioIdFromToken()
+{
+    var usuarioClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    return int.TryParse(usuarioClaim, out var id) ? id : null;
+}
+
+
+
 
 }

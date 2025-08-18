@@ -55,28 +55,47 @@ namespace TaskTracker.Services
         }
 
         // Asignar colaboradores
-        public async Task<bool> AsignarColaboradoresAsync(int empresaId, AsignarColaboradoresProyectoDto dto)
+public async Task<bool> AsignarColaboradoresAsync(int empresaId, AsignarColaboradoresProyectoDto dto)
+{
+    // Verificar que el proyecto exista y pertenezca a la empresa
+    var proyecto = await _context.Proyectos
+        .FirstOrDefaultAsync(p => p.Id == dto.ProyectoId && p.EmpresaId == empresaId);
+
+    if (proyecto == null)
+        return false;
+
+    // Obtener los usuarios válidos (colaboradores de la misma empresa)
+    var usuarios = await _context.Usuarios
+        .Where(u => dto.UsuarioIds.Contains(u.Id) && u.EmpresaId == empresaId && u.Rol == "colaborador")
+        .ToListAsync();
+
+    // Obtener colaboradores ya asignados a este proyecto
+    var yaAsignados = await _context.ProyectoColaboradores
+        .Where(pc => pc.ProyectoId == dto.ProyectoId && dto.UsuarioIds.Contains(pc.UsuarioId))
+        .Select(pc => pc.UsuarioId)
+        .ToListAsync();
+
+    // Filtrar solo los nuevos colaboradores que aún no están asignados
+    var nuevos = usuarios
+        .Where(u => !yaAsignados.Contains(u.Id))
+        .Select(u => new ProyectoColaborador
         {
-            var proyecto = await _context.Proyectos
-                .FirstOrDefaultAsync(p => p.Id == dto.ProyectoId && p.EmpresaId == empresaId);
+            ProyectoId = dto.ProyectoId,
+            UsuarioId = u.Id
+        })
+        .ToList();
 
-            if (proyecto == null) return false;
+    // Agregar solo si hay nuevos
+    if (nuevos.Any())
+    {
+        _context.ProyectoColaboradores.AddRange(nuevos);
+        await _context.SaveChangesAsync();
+    }
 
-            var usuarios = await _context.Usuarios
-                .Where(u => dto.UsuarioIds.Contains(u.Id) && u.EmpresaId == empresaId && u.Rol == "colaborador")
-                .ToListAsync();
+    return true;
+}
 
-            var nuevos = usuarios.Select(u => new ProyectoColaborador
-            {
-                ProyectoId = dto.ProyectoId,
-                UsuarioId = u.Id
-            });
-
-            _context.ProyectoColaboradores.AddRange(nuevos);
-            await _context.SaveChangesAsync();
-            return true;
-        }
-        // En ProyectoService.cs
+        // Obtener el avance del proyecto 
         public async Task<List<ProyectoConAvanceDto>> ObtenerProyectosConAvanceAsync(int empresaId)
         {
             var proyectos = await _context.Proyectos
@@ -106,6 +125,36 @@ namespace TaskTracker.Services
         }).ToList();
 
         }
+        
+        //Obtener proyectos que pertenencen a x colaborador, que se muestre solo 3 estados 
+public async Task<List<ProyectoConTareasDto>> ObtenerProyectosAsignadosAColaboradorAsync(int usuarioId)
+{
+    var estadosValidos = new[] { EstadoTarea.EnProceso, EstadoTarea.Inconclusa, EstadoTarea.Finalizada };
+
+    var proyectos = await _context.Proyectos
+        .Where(p => p.Colaboradores.Any(pc => pc.UsuarioId == usuarioId))
+        .Include(p => p.Tareas)
+        .Where(p => p.Tareas.Any(t => estadosValidos.Contains(t.Estado)))
+        .Select(p => new ProyectoConTareasDto
+        {
+            Id = p.Id,
+            Nombre = p.Nombre,
+            Descripcion = p.Descripcion,
+            FechaInicio = p.FechaInicio,
+            FechaFin = p.FechaFin,
+            Tareas = p.Tareas
+                .Where(t => estadosValidos.Contains(t.Estado))
+                .Select(t => new TareaDetalleDto
+                {
+                    Id = t.Id,
+                    Descripcion = t.Descripcion,
+                    Estado = t.Estado
+                }).ToList()
+        })
+        .ToListAsync();
+
+    return proyectos;
+}
 
 
         // Contar proyectos por empresa

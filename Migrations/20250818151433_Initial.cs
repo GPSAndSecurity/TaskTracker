@@ -7,11 +7,57 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace TaskTracker.Migrations
 {
     /// <inheritdoc />
-    public partial class AddProyectosYTareas : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AlterDatabase()
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "Empresas",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    Nombre = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Descripcion = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Empresas", x => x.Id);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "Clientes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    Nombre = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Correo = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Telefono = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    EmpresaId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Clientes", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Clientes_Empresas_EmpresaId",
+                        column: x => x.EmpresaId,
+                        principalTable: "Empresas",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
             migrationBuilder.CreateTable(
                 name: "Proyectos",
                 columns: table => new
@@ -34,6 +80,67 @@ namespace TaskTracker.Migrations
                         name: "FK_Proyectos_Empresas_EmpresaId",
                         column: x => x.EmpresaId,
                         principalTable: "Empresas",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "Usuarios",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    Name = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Lastname = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Email = table.Column<string>(type: "varchar(255)", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    PasswordHash = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Rol = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    EmpresaId = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Usuarios", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Usuarios_Empresas_EmpresaId",
+                        column: x => x.EmpresaId,
+                        principalTable: "Empresas",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "Tareas",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    ProyectoId = table.Column<int>(type: "int", nullable: false),
+                    Descripcion = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Ubicacion = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    FechaInicioEstimado = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    FechaFinEstimado = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    Prioridad = table.Column<int>(type: "int", nullable: false),
+                    AttachmentRequerido = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    UbicacionRequeridaAlCerrar = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    FechaCierre = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    Estado = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Tareas", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Tareas_Proyectos_ProyectoId",
+                        column: x => x.ProyectoId,
+                        principalTable: "Proyectos",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 })
@@ -67,31 +174,23 @@ namespace TaskTracker.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "Tareas",
+                name: "SubTarea",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    ProyectoId = table.Column<int>(type: "int", nullable: false),
+                    TareaId = table.Column<int>(type: "int", nullable: false),
                     Descripcion = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Ubicacion = table.Column<string>(type: "longtext", nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    FechaInicioEstimado = table.Column<DateTime>(type: "datetime(6)", nullable: true),
-                    FechaFinEstimado = table.Column<DateTime>(type: "datetime(6)", nullable: true),
-                    Prioridad = table.Column<int>(type: "int", nullable: false),
-                    AttachmentRequerido = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    UbicacionRequeridaAlCerrar = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    FechaCierre = table.Column<DateTime>(type: "datetime(6)", nullable: true),
-                    Estado = table.Column<int>(type: "int", nullable: false)
+                    Completada = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Tareas", x => x.Id);
+                    table.PrimaryKey("PK_SubTarea", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Tareas_Proyectos_ProyectoId",
-                        column: x => x.ProyectoId,
-                        principalTable: "Proyectos",
+                        name: "FK_SubTarea_Tareas_TareaId",
+                        column: x => x.TareaId,
+                        principalTable: "Tareas",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 })
@@ -180,6 +279,11 @@ namespace TaskTracker.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Clientes_EmpresaId",
+                table: "Clientes",
+                column: "EmpresaId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ProyectoColaboradores_ProyectoId",
                 table: "ProyectoColaboradores",
                 column: "ProyectoId");
@@ -193,6 +297,11 @@ namespace TaskTracker.Migrations
                 name: "IX_Proyectos_EmpresaId",
                 table: "Proyectos",
                 column: "EmpresaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SubTarea_TareaId",
+                table: "SubTarea",
+                column: "TareaId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TareaAdjuntos_TareaId",
@@ -223,13 +332,30 @@ namespace TaskTracker.Migrations
                 name: "IX_Tareas_ProyectoId",
                 table: "Tareas",
                 column: "ProyectoId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Usuarios_Email",
+                table: "Usuarios",
+                column: "Email",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Usuarios_EmpresaId",
+                table: "Usuarios",
+                column: "EmpresaId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "Clientes");
+
+            migrationBuilder.DropTable(
                 name: "ProyectoColaboradores");
+
+            migrationBuilder.DropTable(
+                name: "SubTarea");
 
             migrationBuilder.DropTable(
                 name: "TareaAdjuntos");
@@ -244,7 +370,13 @@ namespace TaskTracker.Migrations
                 name: "Tareas");
 
             migrationBuilder.DropTable(
+                name: "Usuarios");
+
+            migrationBuilder.DropTable(
                 name: "Proyectos");
+
+            migrationBuilder.DropTable(
+                name: "Empresas");
         }
     }
 }

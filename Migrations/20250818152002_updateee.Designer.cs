@@ -12,8 +12,8 @@ using TaskTracker.Data;
 namespace TaskTracker.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250811172728_AgregarRelacionSubTareas")]
-    partial class AgregarRelacionSubTareas
+    [Migration("20250818152002_updateee")]
+    partial class updateee
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

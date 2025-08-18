@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TaskTracker.Data;
 
@@ -11,9 +12,11 @@ using TaskTracker.Data;
 namespace TaskTracker.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250818153322_AddSubTarea")]
+    partial class AddSubTarea
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -356,7 +359,7 @@ namespace TaskTracker.Migrations
                         .IsRequired();
 
                     b.HasOne("TaskTracker.Models.Usuario", "Usuario")
-                        .WithMany("ProyectosAsignados")
+                        .WithMany()
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -470,11 +473,6 @@ namespace TaskTracker.Migrations
                     b.Navigation("Comentarios");
 
                     b.Navigation("SubTareas");
-                });
-
-            modelBuilder.Entity("TaskTracker.Models.Usuario", b =>
-                {
-                    b.Navigation("ProyectosAsignados");
                 });
 #pragma warning restore 612, 618
         }

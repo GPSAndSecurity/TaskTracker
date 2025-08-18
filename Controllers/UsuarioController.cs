@@ -109,7 +109,7 @@ public class UsuariosController : ControllerBase
             usuario.EmpresaId
         });
     }
-
+    //actualizar usuario 
     [HttpPut("{id}")]
     [Authorize(Roles = "superadmin,admin_empresa")]
     public async Task<IActionResult> ActualizarUsuario(int id, UpdateUsuarioDto dto)
@@ -121,7 +121,7 @@ public class UsuariosController : ControllerBase
         var actualizado = await _service.ActualizarUsuarioAsync(id, dto);
         return Ok(actualizado);
     }
-
+    //eliminar usuario 
     [HttpDelete("{id}")]
     [Authorize(Roles = "superadmin")]
     public async Task<IActionResult> EliminarUsuario(int id)

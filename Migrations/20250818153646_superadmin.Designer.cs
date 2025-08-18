@@ -12,8 +12,8 @@ using TaskTracker.Data;
 namespace TaskTracker.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250805144621_AddProyectosYTareas")]
-    partial class AddProyectosYTareas
+    [Migration("20250818153646_superadmin")]
+    partial class superadmin
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -132,6 +132,31 @@ namespace TaskTracker.Migrations
                     b.HasIndex("UsuarioId");
 
                     b.ToTable("ProyectoColaboradores");
+                });
+
+            modelBuilder.Entity("TaskTracker.Models.SubTarea", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Completada")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("TareaId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TareaId");
+
+                    b.ToTable("SubTareas");
                 });
 
             modelBuilder.Entity("TaskTracker.Models.Tarea", b =>
@@ -344,6 +369,17 @@ namespace TaskTracker.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("TaskTracker.Models.SubTarea", b =>
+                {
+                    b.HasOne("TaskTracker.Models.Tarea", "Tarea")
+                        .WithMany("SubTareas")
+                        .HasForeignKey("TareaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tarea");
+                });
+
             modelBuilder.Entity("TaskTracker.Models.Tarea", b =>
                 {
                     b.HasOne("TaskTracker.Models.Proyecto", "Proyecto")
@@ -435,6 +471,8 @@ namespace TaskTracker.Migrations
                     b.Navigation("Asignados");
 
                     b.Navigation("Comentarios");
+
+                    b.Navigation("SubTareas");
                 });
 #pragma warning restore 612, 618
         }
