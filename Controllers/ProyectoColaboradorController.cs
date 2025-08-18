@@ -28,9 +28,55 @@ public class ProyectosColaboradorController : ControllerBase
         return Ok(proyectos);
     }
 
+    // GET: api/proyectos/{proyectoId}/colaboradores
+    [HttpGet("{proyectoId}/colaboradores")]
+    [Authorize(Roles = "superadmin,admin")]
+    public async Task<ActionResult<List<UsuarioDto>>> ObtenerColaboradoresPorProyecto(int proyectoId)
+    {
+        var colaboradores = await _proyectoService.ObtenerColaboradoresPorProyectoAsync(proyectoId);
+        return Ok(colaboradores);
+    }
+
+    // GET: api/proyectos/{proyectoId}/colaboradores/disponibles
+    [HttpGet("{proyectoId}/colaboradores/disponibles")]
+    [Authorize(Roles = "superadmin,admin")]
+    public async Task<ActionResult<List<UsuarioDto>>> ObtenerColaboradoresDisponibles(int proyectoId)
+    {
+        var empresaId = GetEmpresaIdFromToken();
+        if (empresaId == null)
+            return Unauthorized("Empresa no identificada en el token.");
+
+        var disponibles = await _proyectoService.ObtenerColaboradoresDisponiblesParaProyectoAsync(proyectoId, empresaId.Value);
+        return Ok(disponibles);
+    }
+
+    // DELETE: api/proyectos/{proyectoId}/colaboradores/{usuarioId}
+    [HttpDelete("{proyectoId}/colaboradores/{usuarioId}")]
+    [Authorize(Roles = "superadmin,admin")]
+    public async Task<IActionResult> EliminarColaboradorDeProyecto(int proyectoId, int usuarioId)
+    {
+        var empresaId = GetEmpresaIdFromToken();
+        if (empresaId == null)
+            return Unauthorized("Empresa no identificada en el token.");
+
+        var resultado = await _proyectoService.EliminarColaboradorDeProyectoAsync(proyectoId, usuarioId, empresaId.Value);
+        if (!resultado)
+            return NotFound("No se encontró el colaborador asignado o no pertenece a la empresa.");
+
+        return NoContent();
+    }
+
     private int? GetUsuarioIdFromToken()
     {
         var usuarioClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         return int.TryParse(usuarioClaim, out var id) ? id : null;
     }
+
+    private int? GetEmpresaIdFromToken()
+    {
+        var empresaClaim = User.FindFirst("empresaId")?.Value;
+        return int.TryParse(empresaClaim, out var id) ? id : null;
+    }
+    
+    
 }
