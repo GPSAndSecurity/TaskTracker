@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
@@ -8,19 +10,18 @@ using TaskTracker.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// CONEXIÓN A MYSQL
+// 🔹 CONEXIÓN A MYSQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
-// JWT
+// 🔹 JWT
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("JWT Key not found in configuration.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        // Configuración de validación del token
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -30,11 +31,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-
             RoleClaimType = ClaimTypes.Role
         };
 
-        // Eventos de autenticación JWT
         options.Events = new JwtBearerEvents
         {
             OnAuthenticationFailed = context =>
@@ -57,6 +56,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+// 🔹 INYECCIÓN DE SERVICIOS
 builder.Services.AddScoped<UsuarioService>();
 builder.Services.AddScoped<EmpresaService>();
 builder.Services.AddScoped<JwtService>();
@@ -68,6 +68,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 
+// 🔹 CONFIG JSON
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -76,7 +77,7 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNamingPolicy = null;
     });
 
-// CORS 
+// 🔹 CORS
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -87,16 +88,22 @@ builder.Services.AddCors(options =>
     });
 });
 
+// 🔹 PERMITIR ARCHIVOS MULTIPART HASTA 20MB
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 20 * 1024 * 1024; // 20 MB
+});
+
 var app = builder.Build();
 
-// Seed inicial para crear usuario admin si no existe
+// 🔹 SEED DATA (ADMIN DEFAULT)
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     AppDbContext.Seed(context);
 }
 
-// Middleware
+// 🔹 MIDDLEWARE
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -107,8 +114,18 @@ app.UseHttpsRedirection();
 
 app.UseCors();
 
+// 🔹 Servir archivos estáticos desde la carpeta "Uploads"
+var UploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(UploadsPath),
+    RequestPath = "/uploads"
+});
+
+
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseStaticFiles();
 
 app.MapControllers();
 

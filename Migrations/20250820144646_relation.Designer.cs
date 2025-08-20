@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TaskTracker.Data;
 
@@ -11,9 +12,11 @@ using TaskTracker.Data;
 namespace TaskTracker.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250820144646_relation")]
+    partial class relation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -243,9 +246,6 @@ namespace TaskTracker.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("ComentarioId")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("FechaSubida")
                         .HasColumnType("datetime(6)");
 
@@ -257,8 +257,6 @@ namespace TaskTracker.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ComentarioId");
 
                     b.HasIndex("TareaId");
 
@@ -431,17 +429,11 @@ namespace TaskTracker.Migrations
 
             modelBuilder.Entity("TaskTracker.Models.TareaAdjunto", b =>
                 {
-                    b.HasOne("TaskTracker.Models.TareaComentario", "Comentario")
-                        .WithMany()
-                        .HasForeignKey("ComentarioId");
-
                     b.HasOne("TaskTracker.Models.Tarea", "Tarea")
                         .WithMany("Adjuntos")
                         .HasForeignKey("TareaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Comentario");
 
                     b.Navigation("Tarea");
                 });

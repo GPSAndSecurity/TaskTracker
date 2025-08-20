@@ -17,4 +17,3 @@ namespace TaskTracker.DTOs
         public List<AdjuntoDto> Adjuntos { get; set; } = new();
     }
 }
-

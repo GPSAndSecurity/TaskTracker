@@ -177,5 +177,32 @@ public class TareaService
         await _context.SaveChangesAsync();
     }
 
+public async Task<List<UsuarioDto>> ObtenerColaboradoresPorTareaAsync(int tareaId, int empresaId)
+{
+    // Verificar que la tarea exista y pertenezca a la empresa
+    var tarea = await _context.Tareas
+        .Include(t => t.Proyecto)
+        .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto.EmpresaId == empresaId);
+
+    if (tarea == null)
+        return new List<UsuarioDto>();
+
+    // Obtener usuarios asignados a la tarea
+    var colaboradores = await _context.TareaAsignados
+        .Where(ta => ta.TareaId == tareaId)
+        .Include(ta => ta.Usuario)
+        .Select(ta => ta.Usuario)
+        .Where(u => u.EmpresaId == empresaId)
+        .Select(u => new UsuarioDto
+        {
+            Id = u.Id,
+            Name = u.Name,
+            Lastname = u.Lastname,
+            Email = u.Email
+        })
+        .ToListAsync();
+
+    return colaboradores;
+}
 
 }

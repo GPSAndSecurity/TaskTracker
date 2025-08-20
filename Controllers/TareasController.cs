@@ -135,6 +135,20 @@ namespace TaskTracker.Controllers
             var usuarioClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return int.TryParse(usuarioClaim, out var id) ? id : null;
         }
+
+
+
+        [HttpGet("{tareaId}/colaboradores")]
+public async Task<ActionResult<List<UsuarioDto>>> ObtenerColaboradoresPorTarea(int tareaId)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null) return Unauthorized();
+
+    var colaboradores = await _tareaService.ObtenerColaboradoresPorTareaAsync(tareaId, empresaId.Value);
+    return Ok(colaboradores);
+}
+
+
         [HttpPost]
         public async Task<IActionResult> CrearTarea([FromBody] CreateTareaDto dto)
         {

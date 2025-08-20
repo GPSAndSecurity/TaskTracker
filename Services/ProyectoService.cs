@@ -57,25 +57,21 @@ namespace TaskTracker.Services
         // Asignar colaboradores a un proyecto
         public async Task<bool> AsignarColaboradoresAsync(int empresaId, AsignarColaboradoresProyectoDto dto)
         {
-            // Verificar que el proyecto exista y pertenezca a la empresa
             var proyecto = await _context.Proyectos
                 .FirstOrDefaultAsync(p => p.Id == dto.ProyectoId && p.EmpresaId == empresaId);
 
             if (proyecto == null)
                 return false;
 
-            // Obtener los usuarios válidos (colaboradores de la misma empresa)
             var usuarios = await _context.Usuarios
                 .Where(u => dto.UsuarioIds.Contains(u.Id) && u.EmpresaId == empresaId && u.Rol == "colaborador")
                 .ToListAsync();
 
-            // Obtener colaboradores ya asignados a este proyecto
             var yaAsignados = await _context.ProyectoColaboradores
                 .Where(pc => pc.ProyectoId == dto.ProyectoId && dto.UsuarioIds.Contains(pc.UsuarioId))
                 .Select(pc => pc.UsuarioId)
                 .ToListAsync();
 
-            // Filtrar solo los nuevos colaboradores que aún no están asignados
             var nuevos = usuarios
                 .Where(u => !yaAsignados.Contains(u.Id))
                 .Select(u => new ProyectoColaborador
@@ -94,7 +90,7 @@ namespace TaskTracker.Services
             return true;
         }
 
-        // Obtener proyectos con avance
+        // Obtener proyectos con avance (para admins/empresa)
         public async Task<List<ProyectoConAvanceDto>> ObtenerProyectosConAvanceAsync(int empresaId)
         {
             var proyectos = await _context.Proyectos
@@ -183,7 +179,6 @@ namespace TaskTracker.Services
             return resultado;
         }
 
-
         // Contar proyectos por empresa
         public async Task<int> ContarProyectosPorEmpresaAsync(int empresaId)
         {
@@ -209,21 +204,17 @@ namespace TaskTracker.Services
             return colaboradores;
         }
 
-
         public async Task<List<UsuarioDto>> ObtenerColaboradoresDisponiblesParaProyectoAsync(int proyectoId, int empresaId)
         {
-            // Obtener todos los colaboradores de la empresa
             var colaboradoresEmpresa = await _context.Usuarios
                 .Where(u => u.EmpresaId == empresaId && u.Rol == "colaborador")
                 .ToListAsync();
 
-            // Obtener los IDs de colaboradores ya asignados al proyecto
             var asignadosIds = await _context.ProyectoColaboradores
                 .Where(pc => pc.ProyectoId == proyectoId)
                 .Select(pc => pc.UsuarioId)
                 .ToListAsync();
 
-            // Filtrar colaboradores no asignados
             var disponibles = colaboradoresEmpresa
                 .Where(u => !asignadosIds.Contains(u.Id))
                 .Select(u => new UsuarioDto
@@ -239,31 +230,61 @@ namespace TaskTracker.Services
             return disponibles;
         }
 
+        public async Task<bool> EliminarColaboradorDeProyectoAsync(int proyectoId, int usuarioId, int empresaId)
+        {
+            var proyecto = await _context.Proyectos
+                .FirstOrDefaultAsync(p => p.Id == proyectoId && p.EmpresaId == empresaId);
 
+            if (proyecto == null)
+                return false;
 
-public async Task<bool> EliminarColaboradorDeProyectoAsync(int proyectoId, int usuarioId, int empresaId)
-{
-    // Verificar que el proyecto pertenece a la empresa
-    var proyecto = await _context.Proyectos
-        .FirstOrDefaultAsync(p => p.Id == proyectoId && p.EmpresaId == empresaId);
+            var asignacion = await _context.ProyectoColaboradores
+                .FirstOrDefaultAsync(pc => pc.ProyectoId == proyectoId && pc.UsuarioId == usuarioId);
 
-    if (proyecto == null)
-        return false;
+            if (asignacion == null)
+                return false;
 
-    // Buscar la asignación específica
-    var asignacion = await _context.ProyectoColaboradores
-        .FirstOrDefaultAsync(pc => pc.ProyectoId == proyectoId && pc.UsuarioId == usuarioId);
+            _context.ProyectoColaboradores.Remove(asignacion);
+            await _context.SaveChangesAsync();
 
-    if (asignacion == null)
-        return false;
+            return true;
+        }
 
-    _context.ProyectoColaboradores.Remove(asignacion);
-    await _context.SaveChangesAsync();
+        // 🔹 Obtener proyectos con avance filtrados por colaborador
+        public async Task<List<ProyectoConAvanceDto>> ObtenerProyectosConAvancePorColaboradorAsync(int usuarioId)
+        {
+            var proyectos = await _context.Proyectos
+                .Where(p => p.Colaboradores.Any(pc => pc.UsuarioId == usuarioId))
+                .Include(p => p.Tareas)
+                .ToListAsync();
 
-    return true;
-}
+            return proyectos.Select(p =>
+            {
+                double porcentaje = 0;
+                if (p.Tareas.Any())
+                {
+                    var totalTareas = p.Tareas.Count;
+                    var tareasFinalizadas = p.Tareas.Count(t => t.Estado == EstadoTarea.Finalizada);
+                    porcentaje = (double)tareasFinalizadas / totalTareas * 100;
+                }
 
+                return new ProyectoConAvanceDto
+                {
+                    Id = p.Id,
+                    Nombre = p.Nombre,
+                    Descripcion = p.Descripcion,
+                    FechaInicio = p.FechaInicio,
+                    FechaFin = p.FechaFin,
+                    PorcentajeAvance = Math.Round(porcentaje, 2)
+                };
+            }).ToList();
+        }
+
+        // 🔹 Contar proyectos asignados a un colaborador
+        public async Task<int> ContarProyectosAsignadosAColaboradorAsync(int usuarioId)
+        {
+            return await _context.Proyectos
+                .CountAsync(p => p.Colaboradores.Any(pc => pc.UsuarioId == usuarioId));
+        }
     }
-
-    
 }
