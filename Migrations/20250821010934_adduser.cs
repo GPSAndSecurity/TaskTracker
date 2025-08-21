@@ -5,7 +5,7 @@
 namespace TaskTracker.Migrations
 {
     /// <inheritdoc />
-    public partial class FixProyectoColaborador : Migration
+    public partial class adduser : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

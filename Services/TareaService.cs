@@ -71,31 +71,30 @@ public class TareaService
         return tarea;
     }
 
-    public async Task<bool> AsignarColaboradoresATareaAsync(int tareaId, List<int> usuarioIds, int empresaId)
-    {
-        var tarea = await _context.Tareas
-            .Include(t => t.Proyecto)
-            .FirstOrDefaultAsync(t => t.Id == tareaId);
+  public async Task<bool> AsignarColaboradoresATareaAsync(int tareaId, List<int> usuarioIds, int empresaId)
+{
+    var tarea = await _context.Tareas
+        .Include(t => t.Proyecto)
+        .FirstOrDefaultAsync(t => t.Id == tareaId);
 
         if (tarea == null || tarea.Proyecto == null || tarea.Proyecto.EmpresaId != empresaId)
             return false;
 
-        var usuarios = await _context.Usuarios
-            .Where(u => usuarioIds.Contains(u.Id) && u.EmpresaId == empresaId)
-            .ToListAsync();
+    var usuarios = await _context.Usuarios
+        .Where(u => usuarioIds.Contains(u.Id) && u.EmpresaId == empresaId)
+        .ToListAsync();
 
-        var asignaciones = usuarios.Select(u => new TareaAsignado
-        {
-            TareaId = tareaId,
-            UsuarioId = u.Id
-        });
+    var asignaciones = usuarios.Select(u => new TareaAsignado
+    {
+        TareaId = tareaId,
+        UsuarioId = u.Id
+    });
 
-        _context.TareaAsignados.AddRange(asignaciones);
-        await _context.SaveChangesAsync();
+    _context.TareaAsignados.AddRange(asignaciones);
+    await _context.SaveChangesAsync();
 
-        return true;
-    }
-
+    return true;
+}
     public async Task<bool> CambiarEstadoTareaAsync(int tareaId, EstadoTarea nuevoEstado, int empresaId)
     {
         var tarea = await _context.Tareas

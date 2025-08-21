@@ -12,8 +12,8 @@ using TaskTracker.Data;
 namespace TaskTracker.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250818153646_superadmin")]
-    partial class superadmin
+    [Migration("20250821010934_adduser")]
+    partial class adduser
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -359,7 +359,7 @@ namespace TaskTracker.Migrations
                         .IsRequired();
 
                     b.HasOne("TaskTracker.Models.Usuario", "Usuario")
-                        .WithMany()
+                        .WithMany("ProyectosAsignados")
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -473,6 +473,11 @@ namespace TaskTracker.Migrations
                     b.Navigation("Comentarios");
 
                     b.Navigation("SubTareas");
+                });
+
+            modelBuilder.Entity("TaskTracker.Models.Usuario", b =>
+                {
+                    b.Navigation("ProyectosAsignados");
                 });
 #pragma warning restore 612, 618
         }

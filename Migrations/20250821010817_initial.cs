@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace TaskTracker.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -174,7 +174,7 @@ namespace TaskTracker.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "SubTarea",
+                name: "SubTareas",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -186,9 +186,9 @@ namespace TaskTracker.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_SubTarea", x => x.Id);
+                    table.PrimaryKey("PK_SubTareas", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_SubTarea_Tareas_TareaId",
+                        name: "FK_SubTareas_Tareas_TareaId",
                         column: x => x.TareaId,
                         principalTable: "Tareas",
                         principalColumn: "Id",
@@ -299,8 +299,8 @@ namespace TaskTracker.Migrations
                 column: "EmpresaId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_SubTarea_TareaId",
-                table: "SubTarea",
+                name: "IX_SubTareas_TareaId",
+                table: "SubTareas",
                 column: "TareaId");
 
             migrationBuilder.CreateIndex(
@@ -355,7 +355,7 @@ namespace TaskTracker.Migrations
                 name: "ProyectoColaboradores");
 
             migrationBuilder.DropTable(
-                name: "SubTarea");
+                name: "SubTareas");
 
             migrationBuilder.DropTable(
                 name: "TareaAdjuntos");

@@ -113,15 +113,16 @@ namespace TaskTracker.Controllers
         }
 
         [HttpPost("{tareaId}/asignar")]
-        public async Task<IActionResult> AsignarColaboradores(int tareaId, [FromBody] List<int> usuarioIds)
-        {
-            var empresaId = GetEmpresaIdFromToken();
-            if (empresaId == null) return Unauthorized();
+public async Task<IActionResult> AsignarColaboradores(int tareaId, [FromBody] AsignarUsuariosTareaDto dto)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null) return Unauthorized();
 
-            var exito = await _tareaService.AsignarColaboradoresATareaAsync(tareaId, usuarioIds, empresaId.Value);
-            if (!exito) return BadRequest();
-            return NoContent();
-        }
+    var exito = await _tareaService.AsignarColaboradoresATareaAsync(tareaId, dto.usuarioIds, empresaId.Value);
+    if (!exito) return BadRequest();
+    return NoContent();
+}
+
 
         // helpers para claim
         private int? GetEmpresaIdFromToken()

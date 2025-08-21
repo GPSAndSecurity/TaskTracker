@@ -22,35 +22,6 @@ namespace TaskTracker.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
-            modelBuilder.Entity("TaskTracker.DTOs.AdjuntoDto", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("FechaSubida")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("NombreArchivo")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<int?>("TareaComentarioId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UrlArchivo")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TareaComentarioId");
-
-                    b.ToTable("AdjuntoDto");
-                });
-
             modelBuilder.Entity("TaskTracker.Models.Cliente", b =>
                 {
                     b.Property<int>("Id")
@@ -243,9 +214,6 @@ namespace TaskTracker.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("ComentarioId")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("FechaSubida")
                         .HasColumnType("datetime(6)");
 
@@ -257,8 +225,6 @@ namespace TaskTracker.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ComentarioId");
 
                     b.HasIndex("TareaId");
 
@@ -359,13 +325,6 @@ namespace TaskTracker.Migrations
                     b.ToTable("Usuarios");
                 });
 
-            modelBuilder.Entity("TaskTracker.DTOs.AdjuntoDto", b =>
-                {
-                    b.HasOne("TaskTracker.Models.TareaComentario", null)
-                        .WithMany("Adjuntos")
-                        .HasForeignKey("TareaComentarioId");
-                });
-
             modelBuilder.Entity("TaskTracker.Models.Cliente", b =>
                 {
                     b.HasOne("TaskTracker.Models.Empresa", "Empresa")
@@ -431,17 +390,11 @@ namespace TaskTracker.Migrations
 
             modelBuilder.Entity("TaskTracker.Models.TareaAdjunto", b =>
                 {
-                    b.HasOne("TaskTracker.Models.TareaComentario", "Comentario")
-                        .WithMany()
-                        .HasForeignKey("ComentarioId");
-
                     b.HasOne("TaskTracker.Models.Tarea", "Tarea")
                         .WithMany("Adjuntos")
                         .HasForeignKey("TareaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Comentario");
 
                     b.Navigation("Tarea");
                 });
@@ -455,7 +408,7 @@ namespace TaskTracker.Migrations
                         .IsRequired();
 
                     b.HasOne("TaskTracker.Models.Usuario", "Usuario")
-                        .WithMany("TareasAsignadas")
+                        .WithMany()
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -519,16 +472,9 @@ namespace TaskTracker.Migrations
                     b.Navigation("SubTareas");
                 });
 
-            modelBuilder.Entity("TaskTracker.Models.TareaComentario", b =>
-                {
-                    b.Navigation("Adjuntos");
-                });
-
             modelBuilder.Entity("TaskTracker.Models.Usuario", b =>
                 {
                     b.Navigation("ProyectosAsignados");
-
-                    b.Navigation("TareasAsignadas");
                 });
 #pragma warning restore 612, 618
         }
