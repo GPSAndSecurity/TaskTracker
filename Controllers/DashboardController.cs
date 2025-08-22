@@ -2,7 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TaskTracker.Data;
 using TaskTracker.Services; 
-using TaskTracker.DTOs; 
+using TaskTracker.DTOs;
+using TaskTracker.Models;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -44,4 +45,30 @@ public class DashboardController : ControllerBase
         var proyectos = await _proyectoService.ObtenerProyectosConAvanceAsync(empresaId);
         return Ok(proyectos);
     }
+
+[HttpGet("tareas-por-usuario")]
+public async Task<ActionResult<List<TareasPorUsuarioDto>>> GetTareasAgrupadasPorUsuario()
+{
+    var query = _context.TareaAsignados
+        .Include(ta => ta.Usuario)
+        .Include(ta => ta.Tarea)
+        .AsQueryable();
+
+    var result = await query
+        .GroupBy(ta => new { ta.UsuarioId, ta.Usuario!.Name })
+        .Select(g => new TareasPorUsuarioDto
+        {
+            UsuarioId = g.Key.UsuarioId,
+            UsuarioNombre = g.Key.Name,
+            EnProceso = g.Count(ta => ta.Tarea!.Estado == EstadoTarea.EnProceso),
+            Finalizadas = g.Count(ta => ta.Tarea!.Estado == EstadoTarea.Finalizada),
+            Inconclusas = g.Count(ta => ta.Tarea!.Estado == EstadoTarea.Inconclusa),
+            Total = g.Count()
+        })
+        .ToListAsync();
+
+    return Ok(result);
+}
+
+    
 }

@@ -203,5 +203,18 @@ public async Task<List<UsuarioDto>> ObtenerColaboradoresPorTareaAsync(int tareaI
 
     return colaboradores;
 }
+public async Task<List<Tarea>> ObtenerTareasAsignadasAColaboradorAsync(int proyectoId, int usuarioId, int empresaId)
+{
+    return await _context.Tareas
+        .Where(t => t.ProyectoId == proyectoId &&
+                    t.Proyecto.EmpresaId == empresaId &&
+                    t.Asignados.Any(a => a.UsuarioId == usuarioId))
+        .Include(t => t.SubTareas)
+        .Include(t => t.Adjuntos)
+        .Include(t => t.Comentarios)
+            .ThenInclude(c => c.Usuario)
+        .ToListAsync();
+}
+
 
 }

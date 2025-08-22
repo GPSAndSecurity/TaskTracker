@@ -183,6 +183,20 @@ public async Task<IActionResult> ActualizarTarea(int tareaId, [FromBody] UpdateT
 
     return Ok(tarea);
 }
+[HttpGet("por-proyecto/{proyectoId}/asignadas")]
+[Authorize(Roles = "colaborador")]
+public async Task<IActionResult> ObtenerTareasAsignadasAlColaborador(int proyectoId)
+{
+    var usuarioId = GetUsuarioIdFromToken();
+    var empresaId = GetEmpresaIdFromToken();
+
+    if (usuarioId == null || empresaId == null)
+        return Unauthorized();
+
+    var tareas = await _tareaService.ObtenerTareasAsignadasAColaboradorAsync(proyectoId, usuarioId.Value, empresaId.Value);
+
+    return Ok(tareas);
+}
 
 
 
