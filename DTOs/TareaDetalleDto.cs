@@ -15,5 +15,6 @@ namespace TaskTracker.DTOs
         public List<ComentarioDto> Comentarios { get; set; } = new();
         public List<SubTareaDto> SubTareas { get; set; } = new();
         public List<AdjuntoDto> Adjuntos { get; set; } = new();
-    }
+   
+ }
 }

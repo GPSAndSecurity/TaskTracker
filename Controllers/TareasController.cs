@@ -45,6 +45,7 @@ namespace TaskTracker.Controllers
                 c.FechaComentario,
                 UsuarioNombre = c.Usuario != null ? $"{c.Usuario.Name} {c.Usuario.Lastname}" : "Desconocido"
             }).ToList();
+            var colaboradores = await _tareaService.ObtenerColaboradoresPorTareaAsync(tareaId, empresaId.Value);
 
             // Retornar tarea con comentarios mapeados
             var tareaDto = new
@@ -55,7 +56,8 @@ namespace TaskTracker.Controllers
                 tarea.Estado,
                 tarea.FechaInicioEstimado,
                 tarea.FechaFinEstimado,
-                Comentarios = comentariosConNombre
+                Comentarios = comentariosConNombre,
+                Asignados = colaboradores
             };
 
             return Ok(tareaDto);
