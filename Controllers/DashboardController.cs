@@ -55,11 +55,12 @@ public async Task<ActionResult<List<TareasPorUsuarioDto>>> GetTareasAgrupadasPor
         .AsQueryable();
 
     var result = await query
-        .GroupBy(ta => new { ta.UsuarioId, ta.Usuario!.Name })
+        .GroupBy(ta => new { ta.UsuarioId, ta.Usuario!.Name , ta.Usuario!.Lastname })
         .Select(g => new TareasPorUsuarioDto
         {
             UsuarioId = g.Key.UsuarioId,
             UsuarioNombre = g.Key.Name,
+            UsuarioApellido = g.Key.Lastname,
             EnProceso = g.Count(ta => ta.Tarea!.Estado == EstadoTarea.EnProceso),
             Finalizadas = g.Count(ta => ta.Tarea!.Estado == EstadoTarea.Finalizada),
             Inconclusas = g.Count(ta => ta.Tarea!.Estado == EstadoTarea.Inconclusa),
