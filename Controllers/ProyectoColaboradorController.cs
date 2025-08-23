@@ -30,7 +30,7 @@ public class ProyectosColaboradorController : ControllerBase
 
     // GET: api/proyectos/{proyectoId}/colaboradores
     [HttpGet("{proyectoId}/colaboradores")]
-    [Authorize(Roles = "superadmin,admin")]
+    [Authorize(Roles = "superadmin, admin_empresa")]
     public async Task<ActionResult<List<UsuarioDto>>> ObtenerColaboradoresPorProyecto(int proyectoId)
     {
         var colaboradores = await _proyectoService.ObtenerColaboradoresPorProyectoAsync(proyectoId);
@@ -39,7 +39,7 @@ public class ProyectosColaboradorController : ControllerBase
 
     // GET: api/proyectos/{proyectoId}/colaboradores/disponibles
     [HttpGet("{proyectoId}/colaboradores/disponibles")]
-    [Authorize(Roles = "superadmin,admin")]
+    [Authorize(Roles = "superadmin, admin_empresa")]
     public async Task<ActionResult<List<UsuarioDto>>> ObtenerColaboradoresDisponibles(int proyectoId)
     {
         var empresaId = GetEmpresaIdFromToken();
@@ -52,7 +52,7 @@ public class ProyectosColaboradorController : ControllerBase
 
     // DELETE: api/proyectos/{proyectoId}/colaboradores/{usuarioId}
     [HttpDelete("{proyectoId}/colaboradores/{usuarioId}")]
-    [Authorize(Roles = "superadmin,admin")]
+    [Authorize(Roles = "superadmin, admin_empresa")]
     public async Task<IActionResult> EliminarColaboradorDeProyecto(int proyectoId, int usuarioId)
     {
         var empresaId = GetEmpresaIdFromToken();
