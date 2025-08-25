@@ -49,18 +49,22 @@ public class DashboardController : ControllerBase
 [HttpGet("tareas-por-usuario")]
 public async Task<ActionResult<List<TareasPorUsuarioDto>>> GetTareasAgrupadasPorUsuario()
 {
+    int empresaId = ObtenerEmpresaIdDesdeToken();
+
     var query = _context.TareaAsignados
         .Include(ta => ta.Usuario)
         .Include(ta => ta.Tarea)
+    .Where(ta => ta.Usuario.EmpresaId.HasValue && ta.Usuario.EmpresaId.Value == empresaId)
         .AsQueryable();
 
     var result = await query
-        .GroupBy(ta => new { ta.UsuarioId, ta.Usuario!.Name , ta.Usuario!.Lastname })
+    .GroupBy(ta => new { ta.UsuarioId, ta.Usuario!.Name , ta.Usuario!.Lastname, ta.Usuario!.EmpresaId })
         .Select(g => new TareasPorUsuarioDto
         {
             UsuarioId = g.Key.UsuarioId,
             UsuarioNombre = g.Key.Name,
             UsuarioApellido = g.Key.Lastname,
+            EmpresaId = g.Key.EmpresaId,
             EnProceso = g.Count(ta => ta.Tarea!.Estado == EstadoTarea.EnProceso),
             Finalizadas = g.Count(ta => ta.Tarea!.Estado == EstadoTarea.Finalizada),
             Inconclusas = g.Count(ta => ta.Tarea!.Estado == EstadoTarea.Inconclusa),
@@ -70,6 +74,13 @@ public async Task<ActionResult<List<TareasPorUsuarioDto>>> GetTareasAgrupadasPor
 
     return Ok(result);
 }
+private int ObtenerEmpresaIdDesdeToken()
+{
+    var claim = User.Claims.FirstOrDefault(c => c.Type == "empresaId")?.Value;
+    if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out int empresaId))
+        throw new UnauthorizedAccessException("empresaId inválido en el token");
 
+    return empresaId;
+}
     
 }

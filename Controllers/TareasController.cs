@@ -115,15 +115,15 @@ namespace TaskTracker.Controllers
         }
 
         [HttpPost("{tareaId}/asignar")]
-public async Task<IActionResult> AsignarColaboradores(int tareaId, [FromBody] AsignarUsuariosTareaDto dto)
-{
-    var empresaId = GetEmpresaIdFromToken();
-    if (empresaId == null) return Unauthorized();
+        public async Task<IActionResult> AsignarColaboradores(int tareaId, [FromBody] AsignarUsuariosTareaDto dto)
+        {
+            var empresaId = GetEmpresaIdFromToken();
+            if (empresaId == null) return Unauthorized();
 
-    var exito = await _tareaService.AsignarColaboradoresATareaAsync(tareaId, dto.usuarioIds, empresaId.Value);
-    if (!exito) return BadRequest();
-    return NoContent();
-}
+            var exito = await _tareaService.AsignarColaboradoresATareaAsync(tareaId, dto.usuarioIds, empresaId.Value);
+            if (!exito) return BadRequest();
+            return NoContent();
+        }
 
 
         // helpers para claim
@@ -142,14 +142,14 @@ public async Task<IActionResult> AsignarColaboradores(int tareaId, [FromBody] As
 
 
         [HttpGet("{tareaId}/colaboradores")]
-public async Task<ActionResult<List<UsuarioDto>>> ObtenerColaboradoresPorTarea(int tareaId)
-{
-    var empresaId = GetEmpresaIdFromToken();
-    if (empresaId == null) return Unauthorized();
+        public async Task<ActionResult<List<UsuarioDto>>> ObtenerColaboradoresPorTarea(int tareaId)
+        {
+            var empresaId = GetEmpresaIdFromToken();
+            if (empresaId == null) return Unauthorized();
 
-    var colaboradores = await _tareaService.ObtenerColaboradoresPorTareaAsync(tareaId, empresaId.Value);
-    return Ok(colaboradores);
-}
+            var colaboradores = await _tareaService.ObtenerColaboradoresPorTareaAsync(tareaId, empresaId.Value);
+            return Ok(colaboradores);
+        }
 
 
         [HttpPost]
@@ -164,41 +164,41 @@ public async Task<ActionResult<List<UsuarioDto>>> ObtenerColaboradoresPorTarea(i
             return CreatedAtAction(nameof(ObtenerDetalleTarea), new { tareaId = tarea.Id }, tarea);
         }
 
-[HttpPut("{tareaId}")]
-public async Task<IActionResult> ActualizarTarea(int tareaId, [FromBody] UpdateTareaDto dto)
-{
-    var empresaId = GetEmpresaIdFromToken();
-    if (empresaId == null) return Unauthorized();
+        [HttpPut("{tareaId}")]
+        public async Task<IActionResult> ActualizarTarea(int tareaId, [FromBody] UpdateTareaDto dto)
+        {
+            var empresaId = GetEmpresaIdFromToken();
+            if (empresaId == null) return Unauthorized();
 
-    var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
-    if (tarea == null) return NotFound("Tarea no encontrada.");
-    
-    tarea.Descripcion = dto.Descripcion;
-    tarea.Ubicacion = dto.Ubicacion;
-    tarea.FechaInicioEstimado = dto.FechaInicioEstimado;
-    tarea.FechaFinEstimado = dto.FechaFinEstimado;
-    tarea.Prioridad = dto.Prioridad;
-    tarea.AttachmentRequerido = dto.AttachmentRequerido;
-    tarea.UbicacionRequeridaAlCerrar = dto.UbicacionRequeridaAlCerrar;
+            var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
+            if (tarea == null) return NotFound("Tarea no encontrada.");
 
-    await _tareaService.ActualizarTareaAsync(tarea);
+            tarea.Descripcion = dto.Descripcion;
+            tarea.Ubicacion = dto.Ubicacion;
+            tarea.FechaInicioEstimado = dto.FechaInicioEstimado;
+            tarea.FechaFinEstimado = dto.FechaFinEstimado;
+            tarea.Prioridad = dto.Prioridad;
+            tarea.AttachmentRequerido = dto.AttachmentRequerido;
+            tarea.UbicacionRequeridaAlCerrar = dto.UbicacionRequeridaAlCerrar;
 
-    return Ok(tarea);
-}
-[HttpGet("por-proyecto/{proyectoId}/asignadas")]
-[Authorize(Roles = "colaborador")]
-public async Task<IActionResult> ObtenerTareasAsignadasAlColaborador(int proyectoId)
-{
-    var usuarioId = GetUsuarioIdFromToken();
-    var empresaId = GetEmpresaIdFromToken();
+            await _tareaService.ActualizarTareaAsync(tarea);
 
-    if (usuarioId == null || empresaId == null)
-        return Unauthorized();
+            return Ok(tarea);
+        }
+        [HttpGet("por-proyecto/{proyectoId}/asignadas")]
+        [Authorize(Roles = "colaborador")]
+        public async Task<IActionResult> ObtenerTareasAsignadasAlColaborador(int proyectoId)
+        {
+            var usuarioId = GetUsuarioIdFromToken();
+            var empresaId = GetEmpresaIdFromToken();
 
-    var tareas = await _tareaService.ObtenerTareasAsignadasAColaboradorAsync(proyectoId, usuarioId.Value, empresaId.Value);
+            if (usuarioId == null || empresaId == null)
+                return Unauthorized();
 
-    return Ok(tareas);
-}
+            var tareas = await _tareaService.ObtenerTareasAsignadasAColaboradorAsync(proyectoId, usuarioId.Value, empresaId.Value);
+
+            return Ok(tareas);
+        }
 
 
 
@@ -231,6 +231,22 @@ public async Task<IActionResult> ObtenerTareasAsignadasAlColaborador(int proyect
 
             return Ok(adjunto);
         }
+        
+
+        [HttpDelete("{tareaId}/colaboradores/{usuarioId}")]
+public async Task<IActionResult> EliminarColaboradorDeTarea(int tareaId, int usuarioId)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null) return Unauthorized();
+
+    // Llamamos al servicio para eliminar el colaborador de la tarea
+    var exito = await _tareaService.EliminarColaboradorDeTareaAsync(tareaId, usuarioId, empresaId.Value);
+
+    if (!exito) return NotFound();
+
+    return NoContent();
+}
+
     }
     
     
