@@ -9,7 +9,6 @@ namespace TaskTracker.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "admin_empresa,superadmin,colaborador")]
     public class TareasController : ControllerBase
     {
         private readonly TareaService _tareaService;
@@ -104,6 +103,7 @@ namespace TaskTracker.Controllers
         }
 
         [HttpDelete("{tareaId}")]
+        
         public async Task<IActionResult> EliminarTarea(int tareaId)
         {
             var empresaId = GetEmpresaIdFromToken();
@@ -115,6 +115,7 @@ namespace TaskTracker.Controllers
         }
 
         [HttpPost("{tareaId}/asignar")]
+        [Authorize(Roles = "admin_empresa,superadmin")]
         public async Task<IActionResult> AsignarColaboradores(int tareaId, [FromBody] AsignarUsuariosTareaDto dto)
         {
             var empresaId = GetEmpresaIdFromToken();
@@ -153,6 +154,7 @@ namespace TaskTracker.Controllers
 
 
         [HttpPost]
+        [Authorize(Roles = "admin_empresa,superadmin")]
         public async Task<IActionResult> CrearTarea([FromBody] CreateTareaDto dto)
         {
             var empresaId = GetEmpresaIdFromToken();
@@ -165,6 +167,7 @@ namespace TaskTracker.Controllers
         }
 
         [HttpPut("{tareaId}")]
+        [Authorize(Roles = "admin_empresa,superadmin")]
         public async Task<IActionResult> ActualizarTarea(int tareaId, [FromBody] UpdateTareaDto dto)
         {
             var empresaId = GetEmpresaIdFromToken();
