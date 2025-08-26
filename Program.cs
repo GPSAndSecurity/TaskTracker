@@ -119,13 +119,12 @@ var UploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(UploadsPath),
-    RequestPath = "/uploads"
+    RequestPath = "/Uploads"
 });
 
 
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseStaticFiles();
 
 app.MapControllers();
 

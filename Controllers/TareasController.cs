@@ -103,7 +103,7 @@ namespace TaskTracker.Controllers
         }
 
         [HttpDelete("{tareaId}")]
-        
+
         public async Task<IActionResult> EliminarTarea(int tareaId)
         {
             var empresaId = GetEmpresaIdFromToken();
@@ -203,8 +203,6 @@ namespace TaskTracker.Controllers
             return Ok(tareas);
         }
 
-
-
         [HttpPost("{tareaId}/adjuntos")]
         public async Task<IActionResult> SubirAdjunto(int tareaId, IFormFile archivo)
         {
@@ -217,40 +215,82 @@ namespace TaskTracker.Controllers
             if (archivo == null || archivo.Length == 0)
                 return BadRequest("Archivo inválido");
 
-            // Guardar archivo en carpeta local (o storage)
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
-            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+            if (archivo.Length > 5 * 1024 * 1024) // 5MB
+                return BadRequest("El archivo excede el tamaño máximo de 5MB.");
 
-            var archivoNombre = $"{Guid.NewGuid()}_{archivo.FileName}";
-            var filePath = Path.Combine(uploadsFolder, archivoNombre);
+            // Obtener nombres legibles
+            var empresaNombre = await _tareaService.ObtenerNombreEmpresaPorId(empresaId.Value); // Debes implementar este método
+            var proyectoNombre = await _tareaService.ObtenerNombreProyectoPorId(tarea.ProyectoId); // Este también
 
-            using (var stream = new FileStream(filePath, FileMode.Create))
+            if (string.IsNullOrEmpty(empresaNombre) || string.IsNullOrEmpty(proyectoNombre))
+                return BadRequest("No se pudo determinar empresa o proyecto.");
+
+            // Sanitizar nombres de carpetas
+            var empresaFolder = empresaNombre.Replace(" ", "_").Trim();
+            var proyectoFolder = proyectoNombre.Replace(" ", "_").Trim();
+
+            // Crear ruta organizada
+            var basePath = Path.Combine("Uploads", empresaFolder, proyectoFolder);
+            if (!Directory.Exists(basePath)) Directory.CreateDirectory(basePath);
+
+            var extension = Path.GetExtension(archivo.FileName).ToLower();
+            var fileName = $"{Guid.NewGuid()}{extension}";
+            var fullPath = Path.Combine(basePath, fileName);
+
+            // Comprimir imagen si es JPG o PNG
+            if (extension is ".jpg" or ".jpeg" or ".png")
             {
+                using var stream = archivo.OpenReadStream();
+                await _tareaService.ComprimirYGuardarImagenAsync(stream, fullPath, extension);
+
+            }
+            else
+            {
+                using var stream = new FileStream(fullPath, FileMode.Create);
                 await archivo.CopyToAsync(stream);
             }
 
-            // Guardar registro en base de datos
-            var adjunto = await _tareaService.AgregarAdjuntoAsync(tareaId, archivoNombre, archivo.FileName);
+            // Guardar registro en la BD
+            var url = $"/Uploads/{empresaFolder}/{proyectoFolder}/{fileName}";
+            var adjunto = await _tareaService.AgregarAdjuntoAsync(tareaId, url, archivo.FileName);
 
             return Ok(adjunto);
         }
-        
+
+
 
         [HttpDelete("{tareaId}/colaboradores/{usuarioId}")]
-public async Task<IActionResult> EliminarColaboradorDeTarea(int tareaId, int usuarioId)
+        public async Task<IActionResult> EliminarColaboradorDeTarea(int tareaId, int usuarioId)
+        {
+            var empresaId = GetEmpresaIdFromToken();
+            if (empresaId == null) return Unauthorized();
+
+            // Llamamos al servicio para eliminar el colaborador de la tarea
+            var exito = await _tareaService.EliminarColaboradorDeTareaAsync(tareaId, usuarioId, empresaId.Value);
+
+            if (!exito) return NotFound();
+
+            return NoContent();
+        }
+
+[HttpGet("{tareaId}/comentarios-adjuntos")]
+public async Task<IActionResult> ObtenerComentariosYAdjuntos(int tareaId)
 {
     var empresaId = GetEmpresaIdFromToken();
     if (empresaId == null) return Unauthorized();
 
-    // Llamamos al servicio para eliminar el colaborador de la tarea
-    var exito = await _tareaService.EliminarColaboradorDeTareaAsync(tareaId, usuarioId, empresaId.Value);
+    var lista = await _tareaService.ObtenerComentariosYAdjuntosComoComentariosAsync(tareaId, empresaId.Value);
 
-    if (!exito) return NotFound();
+    if (lista == null || lista.Count == 0)
+        return NotFound("No se encontraron comentarios ni adjuntos.");
 
-    return NoContent();
+    return Ok(lista);
 }
+
+        
 
     }
-    
-    
+
+
 }
+
