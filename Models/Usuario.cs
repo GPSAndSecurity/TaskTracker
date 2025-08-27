@@ -8,6 +8,7 @@ public class Usuario
     public string Email { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
     public string Rol { get; set; } = "colaborador"; // superadmin, admin_empresa, colaborador
+    public bool Activo { get; set; } = true;
 
     public int? EmpresaId { get; set; }
     public Empresa? Empresa { get; set; }

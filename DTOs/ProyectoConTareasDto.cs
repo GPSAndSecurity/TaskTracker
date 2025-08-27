@@ -11,6 +11,9 @@ namespace TaskTracker.DTOs
         public DateTime? FechaFin { get; set; }
 
         public List<TareaDetalleDto> Tareas { get; set; } = new();
+
+         public bool Archivado { get; set; } // 👈 Asegúrate de incluir esto
+
     }
 
 

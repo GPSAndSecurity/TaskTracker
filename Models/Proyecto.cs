@@ -10,7 +10,8 @@ public class Proyecto
     public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
     public DateTime? FechaInicio { get; set; }
     public DateTime? FechaFin { get; set; }
-
+    public bool Activo { get; set; } = true;        // ✅ Nuevo campo
+    public bool Archivado { get; set; } = false;    // ✅ Nuevo campo
     public List<ProyectoColaborador> Colaboradores { get; set; } = new();
     public List<Tarea> Tareas { get; set; } = new();
 }

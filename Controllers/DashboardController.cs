@@ -24,6 +24,7 @@ public class DashboardController : ControllerBase
     public async Task<ActionResult<int>> GetTotalColaboradores()
     {
         int total = await _context.Usuarios.CountAsync(u => u.Rol == "Colaborador");
+
         return Ok(total);
     }
 

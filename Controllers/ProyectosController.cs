@@ -100,13 +100,34 @@ public class ProyectosController : ControllerBase
         var proyectos = await _proyectoService.ObtenerProyectosConAvanceAsync(empresaId.Value);
         return Ok(proyectos);
     }
-private int? GetUsuarioIdFromToken()
+    private int? GetUsuarioIdFromToken()
+    {
+        var usuarioClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        return int.TryParse(usuarioClaim, out var id) ? id : null;
+    }
+
+    [HttpPut("{id}/archivar")]
+    [Authorize(Roles = "superadmin,admin_empresa")]
+    public async Task<IActionResult> ArchivarProyecto(int id)
+    {
+        var resultado = await _proyectoService.ArchivarProyectoAsync(id);
+        if (!resultado)
+            return BadRequest("Proyecto no encontrado, ya archivado o no se puede archivar.");
+
+        return Ok("Proyecto archivado o eliminado correctamente.");
+    }
+
+
+[HttpPut("{proyectoId}/desarchivar")]
+public async Task<IActionResult> DesarchivarProyecto(int proyectoId)
 {
-    var usuarioClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-    return int.TryParse(usuarioClaim, out var id) ? id : null;
+    var resultado = await _proyectoService.DesarchivarProyectoAsync(proyectoId);
+
+    if (!resultado)
+        return BadRequest("No se pudo desarchivar el proyecto.");
+
+    return Ok("Proyecto desarchivado correctamente.");
 }
-
-
 
 
 }

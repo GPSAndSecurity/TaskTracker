@@ -115,7 +115,9 @@ namespace TaskTracker.Services
                     Descripcion = p.Descripcion,
                     FechaInicio = p.FechaInicio,
                     FechaFin = p.FechaFin,
-                    PorcentajeAvance = Math.Round(porcentaje, 2)
+                    PorcentajeAvance = Math.Round(porcentaje, 2),
+                    Archivado = p.Archivado
+
                 };
             }).ToList();
         }
@@ -143,6 +145,7 @@ namespace TaskTracker.Services
                 Descripcion = p.Descripcion,
                 FechaInicio = p.FechaInicio,
                 FechaFin = p.FechaFin,
+                Archivado = p.Archivado,  // <--- ¡Aquí lo agregas!
                 Tareas = p.Tareas
                     .Where(t => estadosValidos.Contains(t.Estado))
                     .Select(t => new TareaDetalleDto
@@ -183,7 +186,7 @@ namespace TaskTracker.Services
         public async Task<int> ContarProyectosPorEmpresaAsync(int empresaId)
         {
             return await _context.Proyectos
-                                 .Where(p => p.EmpresaId == empresaId)
+                                 .Where(p => p.EmpresaId == empresaId&& !p.Archivado)
                                  .CountAsync();
         }
 
@@ -286,5 +289,54 @@ namespace TaskTracker.Services
             return await _context.Proyectos
                 .CountAsync(p => p.Colaboradores.Any(pc => pc.UsuarioId == usuarioId));
         }
+
+
+
+
+        public async Task<bool> ArchivarProyectoAsync(int id)
+        {
+            var proyecto = await _context.Proyectos
+                                .Include(p => p.Tareas)
+                                .Include(p => p.Colaboradores)
+                                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (proyecto == null)
+                return false;
+
+            // Si el proyecto está vacío, eliminarlo
+            if (!proyecto.Tareas.Any() && !proyecto.Colaboradores.Any())
+            {
+                _context.Proyectos.Remove(proyecto);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+
+            // Si ya está archivado, no hacer nada
+            if (proyecto.Archivado)
+                return false;
+
+            // Archivar: marcar como no activo y archivado
+            proyecto.Activo = false;
+            proyecto.Archivado = true;
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+
+
+public async Task<bool> DesarchivarProyectoAsync(int proyectoId)
+{
+    var proyecto = await _context.Proyectos.FindAsync(proyectoId);
+    if (proyecto == null)
+        return false;
+
+    proyecto.Archivado = false;
+    await _context.SaveChangesAsync();
+    return true;
+}
+
+
     }
+
+    
 }
