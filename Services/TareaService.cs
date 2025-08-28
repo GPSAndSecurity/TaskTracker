@@ -43,21 +43,31 @@ public class TareaService
         return tarea;
     }
 
-    public async Task<List<Tarea>> ObtenerTareasPorProyectoAsync(int proyectoId, int empresaId)
-    {
-        var proyectoValido = await _context.Proyectos
-            .AnyAsync(p => p.Id == proyectoId && p.EmpresaId == empresaId);
-        if (!proyectoValido)
-            return new List<Tarea>();
+  public async Task<List<Tarea>> ObtenerTareasPorProyectoAsync(int proyectoId, int empresaId, bool? soloArchivadas = null)
+{
+    var proyectoValido = await _context.Proyectos
+        .AnyAsync(p => p.Id == proyectoId && p.EmpresaId == empresaId);
+    if (!proyectoValido)
+        return new List<Tarea>();
 
-        return await _context.Tareas
-            .Where(t => t.ProyectoId == proyectoId)
-            .Include(t => t.Comentarios)
-                .ThenInclude(c => c.Usuario)
-            .Include(t => t.Asignados)
-                .ThenInclude(a => a.Usuario)
-            .ToListAsync();
+    var query = _context.Tareas
+        .Where(t => t.ProyectoId == proyectoId);
+
+    if (soloArchivadas.HasValue)
+    {
+        if (soloArchivadas.Value)
+            query = query.Where(t => t.Estado == EstadoTarea.Archivada);
+        else
+            query = query.Where(t => t.Estado != EstadoTarea.Archivada);
     }
+
+    return await query
+        .Include(t => t.Comentarios)
+            .ThenInclude(c => c.Usuario)
+        .Include(t => t.Asignados)
+            .ThenInclude(a => a.Usuario)
+        .ToListAsync();
+}
 
     public async Task<Tarea?> ObtenerTareaDetalleAsync(int tareaId, int empresaId)
     {
@@ -241,75 +251,98 @@ public class TareaService
 
         return true;
     }
-public async Task<string?> ObtenerNombreEmpresaPorId(int empresaId)
-{
-    var empresa = await _context.Empresas.FindAsync(empresaId);
-    return empresa?.Nombre;
-}
-
-public async Task<string?> ObtenerNombreProyectoPorId(int proyectoId)
-{
-    var proyecto = await _context.Proyectos.FindAsync(proyectoId);
-    return proyecto?.Nombre;
-}
-
-public async Task ComprimirYGuardarImagenAsync(Stream inputStream, string outputPath, string extension)
-{
-    using var image = await Image.LoadAsync(inputStream);
-
-    if (extension is ".jpg" or ".jpeg")
+    public async Task<string?> ObtenerNombreEmpresaPorId(int empresaId)
     {
-        var encoder = new JpegEncoder
-        {
-            Quality = 75 // Compresión al 75% de calidad
-        };
-        await image.SaveAsync(outputPath, encoder);
+        var empresa = await _context.Empresas.FindAsync(empresaId);
+        return empresa?.Nombre;
     }
-    else if (extension == ".png")
+
+    public async Task<string?> ObtenerNombreProyectoPorId(int proyectoId)
     {
-        var encoder = new PngEncoder
-        {
-            CompressionLevel = PngCompressionLevel.BestCompression
-        };
-        await image.SaveAsync(outputPath, encoder);
+        var proyecto = await _context.Proyectos.FindAsync(proyectoId);
+        return proyecto?.Nombre;
     }
-}
-public async Task<List<ComentarioAdjuntoDto>> ObtenerComentariosYAdjuntosComoComentariosAsync(int tareaId, int empresaId)
+
+    public async Task ComprimirYGuardarImagenAsync(Stream inputStream, string outputPath, string extension)
+    {
+        using var image = await Image.LoadAsync(inputStream);
+
+        if (extension is ".jpg" or ".jpeg")
+        {
+            var encoder = new JpegEncoder
+            {
+                Quality = 75 // Compresión al 75% de calidad
+            };
+            await image.SaveAsync(outputPath, encoder);
+        }
+        else if (extension == ".png")
+        {
+            var encoder = new PngEncoder
+            {
+                CompressionLevel = PngCompressionLevel.BestCompression
+            };
+            await image.SaveAsync(outputPath, encoder);
+        }
+    }
+    public async Task<List<ComentarioAdjuntoDto>> ObtenerComentariosYAdjuntosComoComentariosAsync(int tareaId, int empresaId)
+    {
+        var tarea = await _context.Tareas
+            .Include(t => t.Comentarios)
+                .ThenInclude(c => c.Usuario)
+            .Include(t => t.Adjuntos)
+            .Include(t => t.Proyecto)
+            .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto!.EmpresaId == empresaId);
+
+        if (tarea == null)
+            return new List<ComentarioAdjuntoDto>();
+
+        var comentariosDtos = tarea.Comentarios.Select(c => new ComentarioAdjuntoDto
+        {
+            EsAdjunto = false,
+            UsuarioNombre = $"{c.Usuario?.Name} {c.Usuario?.Lastname}",
+            ComentarioTexto = c.ComentarioTexto,
+            FechaComentario = c.FechaComentario
+        });
+
+        var adjuntosDtos = tarea.Adjuntos.Select(a => new ComentarioAdjuntoDto
+        {
+            EsAdjunto = true,
+            AdjuntoId = a.Id,
+            ArchivoUrl = a.ArchivoUrl,
+            NombreArchivo = a.NombreArchivo,
+            FechaComentario = a.FechaSubida
+        });
+
+        // Mezclamos y ordenamos por fecha
+        var mezclado = comentariosDtos.Concat(adjuntosDtos)
+            .OrderBy(ca => ca.FechaComentario)
+            .ToList();
+
+        return mezclado;
+    }
+
+public async Task<bool> ArchivarTareaAsync(int tareaId)
 {
-    var tarea = await _context.Tareas
-        .Include(t => t.Comentarios)
-            .ThenInclude(c => c.Usuario)
-        .Include(t => t.Adjuntos)
-        .Include(t => t.Proyecto)
-        .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto!.EmpresaId == empresaId);
+    var tarea = await _context.Tareas.FindAsync(tareaId);
+    if (tarea == null || tarea.Estado == EstadoTarea.Archivada)
+        return false;
 
-    if (tarea == null)
-        return new List<ComentarioAdjuntoDto>();
+    tarea.Estado = EstadoTarea.Archivada;
+    await _context.SaveChangesAsync();
+    return true;
+}
 
-    var comentariosDtos = tarea.Comentarios.Select(c => new ComentarioAdjuntoDto
-    {
-        EsAdjunto = false,
-        UsuarioNombre = $"{c.Usuario?.Name} {c.Usuario?.Lastname}",
-        ComentarioTexto = c.ComentarioTexto,
-        FechaComentario = c.FechaComentario
-    });
+public async Task<bool> DesarchivarTareaAsync(int tareaId)
+{
+    var tarea = await _context.Tareas.FindAsync(tareaId);
+    if (tarea == null || tarea.Estado != EstadoTarea.Archivada)
+        return false;
 
-    var adjuntosDtos = tarea.Adjuntos.Select(a => new ComentarioAdjuntoDto
-    {
-        EsAdjunto = true,
-        AdjuntoId = a.Id,
-        ArchivoUrl = a.ArchivoUrl,
-        NombreArchivo = a.NombreArchivo,
-        FechaComentario = a.FechaSubida
-    });
-
-    // Mezclamos y ordenamos por fecha
-    var mezclado = comentariosDtos.Concat(adjuntosDtos)
-        .OrderBy(ca => ca.FechaComentario)
-        .ToList();
-
-    return mezclado;
+    // Aquí puedes decidir a qué estado vuelve al desarchivar
+    // Por ejemplo, Pendiente:
+    tarea.Estado = EstadoTarea.Pendiente;
+    await _context.SaveChangesAsync();
+    return true;
 }
 
 }
-

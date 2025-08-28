@@ -26,5 +26,4 @@ public class Tarea
     public List<TareaAdjunto> Adjuntos { get; set; } = new();
     public List<TareaComentario> Comentarios { get; set; } = new();
     public List<SubTarea> SubTareas { get; set; } = new();
-    
 }

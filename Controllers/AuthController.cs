@@ -21,31 +21,31 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginRequest request)
+public async Task<IActionResult> Login(LoginRequest request)
+{
+    var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == request.Email);
+
+    if (usuario == null || !usuario.Activo || !VerifyPassword(request.Password, usuario.PasswordHash))
     {
-        var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == request.Email);
-
-        if (usuario == null || !VerifyPassword(request.Password, usuario.PasswordHash))
-        {
-            return Unauthorized("Credenciales incorrectas.");
-        }
-
-        var token = _jwtService.GenerateToken(usuario);
-
-        return Ok(new
-        {
-            token,
-            usuario = new
-            {
-                usuario.Id,
-                usuario.Name,
-                usuario.Lastname,
-                usuario.Email,
-                usuario.Rol,
-                usuario.EmpresaId
-            }
-        });
+        return Unauthorized("Credenciales incorrectas o usuario inactivo.");
     }
+
+    var token = _jwtService.GenerateToken(usuario);
+
+    return Ok(new
+    {
+        token,
+        usuario = new
+        {
+            usuario.Id,
+            usuario.Name,
+            usuario.Lastname,
+            usuario.Email,
+            usuario.Rol,
+            usuario.EmpresaId
+        }
+    });
+}
 
     private bool VerifyPassword(string plainPassword, string storedHash)
     {

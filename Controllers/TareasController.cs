@@ -103,16 +103,26 @@ namespace TaskTracker.Controllers
         }
 
         [HttpDelete("{tareaId}")]
+public async Task<IActionResult> EliminarTarea(int tareaId)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null) return Unauthorized();
 
-        public async Task<IActionResult> EliminarTarea(int tareaId)
-        {
-            var empresaId = GetEmpresaIdFromToken();
-            if (empresaId == null) return Unauthorized();
+    // Primero, obtener colaboradores asignados a esta tarea
+    var colaboradores = await _tareaService.ObtenerColaboradoresPorTareaAsync(tareaId, empresaId.Value);
 
-            var exito = await _tareaService.EliminarTareaAsync(tareaId, empresaId.Value);
-            if (!exito) return NotFound();
-            return NoContent();
-        }
+    // Verificar si la tarea tiene colaboradores
+    if (colaboradores != null && colaboradores.Any())
+    {
+        return BadRequest("No se puede eliminar la tarea porque tiene colaboradores asignados.");
+    }
+
+    // Si no hay colaboradores, proceder a eliminar
+    var exito = await _tareaService.EliminarTareaAsync(tareaId, empresaId.Value);
+    if (!exito) return NotFound();
+
+    return NoContent();
+}
 
         [HttpPost("{tareaId}/asignar")]
         [Authorize(Roles = "admin_empresa,superadmin")]
@@ -273,24 +283,43 @@ namespace TaskTracker.Controllers
             return NoContent();
         }
 
-[HttpGet("{tareaId}/comentarios-adjuntos")]
-public async Task<IActionResult> ObtenerComentariosYAdjuntos(int tareaId)
-{
-    var empresaId = GetEmpresaIdFromToken();
-    if (empresaId == null) return Unauthorized();
+        [HttpGet("{tareaId}/comentarios-adjuntos")]
+        public async Task<IActionResult> ObtenerComentariosYAdjuntos(int tareaId)
+        {
+            var empresaId = GetEmpresaIdFromToken();
+            if (empresaId == null) return Unauthorized();
 
-    var lista = await _tareaService.ObtenerComentariosYAdjuntosComoComentariosAsync(tareaId, empresaId.Value);
+            var lista = await _tareaService.ObtenerComentariosYAdjuntosComoComentariosAsync(tareaId, empresaId.Value);
 
-    if (lista == null || lista.Count == 0)
-        return NotFound("No se encontraron comentarios ni adjuntos.");
+            if (lista == null || lista.Count == 0)
+                return NotFound("No se encontraron comentarios ni adjuntos.");
 
-    return Ok(lista);
-}
+            return Ok(lista);
+        }
 
-        
+
+        [HttpPut("{tareaId}/archivar")]
+        [Authorize(Roles = "superadmin,admin_empresa")]
+        public async Task<IActionResult> ArchivarTarea(int tareaId)
+        {
+            var resultado = await _tareaService.ArchivarTareaAsync(tareaId);
+            if (!resultado)
+                return BadRequest("Tarea no encontrada, ya archivada o no se puede archivar.");
+
+            return Ok("Tarea archivada correctamente.");
+        }
+
+        [HttpPut("{tareaId}/desarchivar")]
+        [Authorize(Roles = "superadmin,admin_empresa")]
+        public async Task<IActionResult> DesarchivarTarea(int tareaId)
+        {
+            var resultado = await _tareaService.DesarchivarTareaAsync(tareaId);
+            if (!resultado)
+                return BadRequest("No se pudo desarchivar la tarea.");
+
+            return Ok("Tarea desarchivada correctamente.");
+        }
+
 
     }
-
-
 }
-
