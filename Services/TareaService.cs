@@ -43,31 +43,31 @@ public class TareaService
         return tarea;
     }
 
-  public async Task<List<Tarea>> ObtenerTareasPorProyectoAsync(int proyectoId, int empresaId, bool? soloArchivadas = null)
-{
-    var proyectoValido = await _context.Proyectos
-        .AnyAsync(p => p.Id == proyectoId && p.EmpresaId == empresaId);
-    if (!proyectoValido)
-        return new List<Tarea>();
-
-    var query = _context.Tareas
-        .Where(t => t.ProyectoId == proyectoId);
-
-    if (soloArchivadas.HasValue)
+    public async Task<List<Tarea>> ObtenerTareasPorProyectoAsync(int proyectoId, int empresaId, bool? soloArchivadas = null)
     {
-        if (soloArchivadas.Value)
-            query = query.Where(t => t.Estado == EstadoTarea.Archivada);
-        else
-            query = query.Where(t => t.Estado != EstadoTarea.Archivada);
-    }
+        var proyectoValido = await _context.Proyectos
+            .AnyAsync(p => p.Id == proyectoId && p.EmpresaId == empresaId);
+        if (!proyectoValido)
+            return new List<Tarea>();
 
-    return await query
-        .Include(t => t.Comentarios)
-            .ThenInclude(c => c.Usuario)
-        .Include(t => t.Asignados)
-            .ThenInclude(a => a.Usuario)
-        .ToListAsync();
-}
+        var query = _context.Tareas
+            .Where(t => t.ProyectoId == proyectoId);
+
+        if (soloArchivadas.HasValue)
+        {
+            if (soloArchivadas.Value)
+                query = query.Where(t => t.Estado == EstadoTarea.Archivada);
+            else
+                query = query.Where(t => t.Estado != EstadoTarea.Archivada);
+        }
+
+        return await query
+            .Include(t => t.Comentarios)
+                .ThenInclude(c => c.Usuario)
+            .Include(t => t.Asignados)
+                .ThenInclude(a => a.Usuario)
+            .ToListAsync();
+    }
 
     public async Task<Tarea?> ObtenerTareaDetalleAsync(int tareaId, int empresaId)
     {
@@ -321,28 +321,58 @@ public class TareaService
         return mezclado;
     }
 
-public async Task<bool> ArchivarTareaAsync(int tareaId)
+    public async Task<bool> ArchivarTareaAsync(int tareaId)
+    {
+        var tarea = await _context.Tareas.FindAsync(tareaId);
+        if (tarea == null || tarea.Estado == EstadoTarea.Archivada)
+            return false;
+
+        tarea.Estado = EstadoTarea.Archivada;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> DesarchivarTareaAsync(int tareaId)
+    {
+        var tarea = await _context.Tareas.FindAsync(tareaId);
+        if (tarea == null || tarea.Estado != EstadoTarea.Archivada)
+            return false;
+
+        // Aquí puedes decidir a qué estado vuelve al desarchivar
+        // Por ejemplo, Pendiente:
+        tarea.Estado = EstadoTarea.Pendiente;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+public async Task<List<ProyectoConTareasDto>> ObtenerProyectosAsignadosAUsuarioAsync(int usuarioId, int empresaId)
 {
-    var tarea = await _context.Tareas.FindAsync(tareaId);
-    if (tarea == null || tarea.Estado == EstadoTarea.Archivada)
-        return false;
+    var proyectos = await _context.Proyectos
+        .Where(p => p.EmpresaId == empresaId &&
+                    p.Tareas.Any(t => t.Asignados.Any(a => a.UsuarioId == usuarioId)))
+        .Select(p => new ProyectoConTareasDto
+        {
+            Id = p.Id,
+            Nombre = p.Nombre,
+            Descripcion = p.Descripcion,
+            FechaInicio = p.FechaInicio,
+            FechaFin = p.FechaFin,
+            Archivado = p.Archivado,
 
-    tarea.Estado = EstadoTarea.Archivada;
-    await _context.SaveChangesAsync();
-    return true;
-}
+            // Solo tareas asignadas a ese usuario
+            Tareas = p.Tareas
+                .Where(t => t.Asignados.Any(a => a.UsuarioId == usuarioId))
+                .Select(t => new TareaDetalleDto
+                {
+                    Descripcion = t.Descripcion,
+                    FechaInicioEstimado = t.FechaInicioEstimado,
+                    FechaFinEstimado = t.FechaFinEstimado,
+                    Estado = t.Estado
+                }).ToList()
+        })
+        .ToListAsync();
 
-public async Task<bool> DesarchivarTareaAsync(int tareaId)
-{
-    var tarea = await _context.Tareas.FindAsync(tareaId);
-    if (tarea == null || tarea.Estado != EstadoTarea.Archivada)
-        return false;
-
-    // Aquí puedes decidir a qué estado vuelve al desarchivar
-    // Por ejemplo, Pendiente:
-    tarea.Estado = EstadoTarea.Pendiente;
-    await _context.SaveChangesAsync();
-    return true;
+    return proyectos;
 }
 
 }

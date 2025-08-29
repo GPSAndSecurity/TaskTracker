@@ -320,6 +320,49 @@ public async Task<IActionResult> EliminarTarea(int tareaId)
             return Ok("Tarea desarchivada correctamente.");
         }
 
+[HttpGet("proyectos-con-tareas-asignadas")]
+[Authorize(Roles = "colaborador")]
+public async Task<IActionResult> ObtenerProyectosConTareasAsignadas()
+{
+    var usuarioId = GetUsuarioIdFromToken();
+    var empresaId = GetEmpresaIdFromToken();
+    if (usuarioId == null || empresaId == null) return Unauthorized();
+
+    var proyectos = await _tareaService.ObtenerProyectosAsignadosAUsuarioAsync(usuarioId.Value, empresaId.Value);
+    if (proyectos == null || !proyectos.Any()) return Ok(new List<object>());
+
+    var resultado = new List<object>();
+
+    foreach (var proyecto in proyectos)
+    {
+        var tareasAsignadas = await _tareaService.ObtenerTareasAsignadasAColaboradorAsync(proyecto.Id, usuarioId.Value, empresaId.Value);
+
+        var proyectoDto = new 
+        {
+            proyecto.Id,
+            proyecto.Nombre,
+            proyecto.Descripcion,
+            proyecto.FechaInicio,
+            proyecto.FechaFin
+        };
+
+        var tareasDto = tareasAsignadas.Select(t => new 
+        {
+            t.Descripcion,
+            t.FechaInicioEstimado,
+            t.FechaFinEstimado,
+            t.Estado
+        }).ToList();
+
+        resultado.Add(new
+        {
+            Proyecto = proyectoDto,
+            TareasAsignadas = tareasDto
+        });
+    }
+
+    return Ok(resultado);
+}
 
     }
 }
