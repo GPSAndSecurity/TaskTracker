@@ -10,10 +10,12 @@ using TaskTracker.Services;
 public class ProyectosController : ControllerBase
 {
     private readonly ProyectoService _proyectoService;
+    private readonly AuditoriaService _auditoria;
 
-    public ProyectosController(ProyectoService proyectoService)
+    public ProyectosController(ProyectoService proyectoService, AuditoriaService auditoria)
     {
         _proyectoService = proyectoService;
+        _auditoria = auditoria;
     }
 
     // GET: api/proyectos
@@ -37,6 +39,14 @@ public class ProyectosController : ControllerBase
             return Unauthorized("Empresa no identificada en el token.");
 
         var proyecto = await _proyectoService.CrearProyectoAsync(dto, empresaId.Value);
+
+        await _auditoria.RegistrarEventoAsync(
+            accion: "Crear Proyecto",
+            entidad: "Proyecto",
+            entidadId: proyecto.Id,
+            descripcion: $"Se creó el proyecto '{proyecto.Nombre}'"
+        );
+
         return CreatedAtAction(nameof(ObtenerProyectos), new { id = proyecto.Id }, proyecto);
     }
 
@@ -48,14 +58,67 @@ public class ProyectosController : ControllerBase
         if (empresaId == null)
             return Unauthorized("Empresa no identificada en el token.");
 
+        var proyecto = await _proyectoService.ObtenerPorIdAsync(id); // Asegúrate de tener este método en el servicio
+        if (proyecto == null || proyecto.EmpresaId != empresaId)
+            return NotFound("Proyecto no encontrado o no pertenece a tu empresa.");
+
         var exito = await _proyectoService.EliminarProyectoAsync(id, empresaId.Value);
         if (!exito)
-            return NotFound("Proyecto no encontrado o no pertenece a tu empresa.");
+            return NotFound("No se pudo eliminar el proyecto.");
+
+        await _auditoria.RegistrarEventoAsync(
+            accion: "Eliminar Proyecto",
+            entidad: "Proyecto",
+            entidadId: id,
+            descripcion: $"Se eliminó el proyecto '{proyecto.Nombre}'"
+        );
 
         return NoContent();
     }
 
+    // PUT: api/proyectos/{id}/archivar
+    [HttpPut("{id}/archivar")]
+    public async Task<IActionResult> ArchivarProyecto(int id)
+    {
+        var proyecto = await _proyectoService.ObtenerPorIdAsync(id);
+        if (proyecto == null)
+            return NotFound("Proyecto no encontrado.");
 
+        var resultado = await _proyectoService.ArchivarProyectoAsync(id);
+        if (!resultado)
+            return BadRequest("Ya archivado o no se puede archivar.");
+
+        await _auditoria.RegistrarEventoAsync(
+            accion: "Archivar Proyecto",
+            entidad: "Proyecto",
+            entidadId: id,
+            descripcion: $"Se archivó el proyecto '{proyecto.Nombre}'"
+        );
+
+        return Ok("Proyecto archivado correctamente.");
+    }
+
+    // PUT: api/proyectos/{id}/desarchivar
+    [HttpPut("{proyectoId}/desarchivar")]
+    public async Task<IActionResult> DesarchivarProyecto(int proyectoId)
+    {
+        var proyecto = await _proyectoService.ObtenerPorIdAsync(proyectoId);
+        if (proyecto == null)
+            return NotFound("Proyecto no encontrado.");
+
+        var resultado = await _proyectoService.DesarchivarProyectoAsync(proyectoId);
+        if (!resultado)
+            return BadRequest("No se pudo desarchivar el proyecto.");
+
+        await _auditoria.RegistrarEventoAsync(
+            accion: "Desarchivar Proyecto",
+            entidad: "Proyecto",
+            entidadId: proyectoId,
+            descripcion: $"Se desarchivó el proyecto '{proyecto.Nombre}'"
+        );
+
+        return Ok("Proyecto desarchivado correctamente.");
+    }
 
     // POST: api/proyectos/asignar-colaboradores
     [HttpPost("asignar-colaboradores")]
@@ -72,7 +135,7 @@ public class ProyectosController : ControllerBase
         return Ok("Colaboradores asignados correctamente.");
     }
 
-    // total de proyectos por empresa
+    // GET: api/proyectos/total
     [HttpGet("total")]
     public async Task<ActionResult<int>> GetTotalProyectos()
     {
@@ -84,12 +147,7 @@ public class ProyectosController : ControllerBase
         return Ok(total);
     }
 
-    private int? GetEmpresaIdFromToken()
-    {
-        var empresaClaim = User.FindFirst("empresaId")?.Value;
-        return int.TryParse(empresaClaim, out var id) ? id : null;
-    }
-
+    // GET: api/proyectos/con-avance
     [HttpGet("con-avance")]
     public async Task<ActionResult<IEnumerable<ProyectoConAvanceDto>>> GetProyectosConAvance()
     {
@@ -100,34 +158,18 @@ public class ProyectosController : ControllerBase
         var proyectos = await _proyectoService.ObtenerProyectosConAvanceAsync(empresaId.Value);
         return Ok(proyectos);
     }
+
+    // === MÉTODOS AUXILIARES ===
+
+    private int? GetEmpresaIdFromToken()
+    {
+        var empresaClaim = User.FindFirst("empresaId")?.Value;
+        return int.TryParse(empresaClaim, out var id) ? id : null;
+    }
+
     private int? GetUsuarioIdFromToken()
     {
         var usuarioClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         return int.TryParse(usuarioClaim, out var id) ? id : null;
     }
-
-    [HttpPut("{id}/archivar")]
-    [Authorize(Roles = "superadmin,admin_empresa")]
-    public async Task<IActionResult> ArchivarProyecto(int id)
-    {
-        var resultado = await _proyectoService.ArchivarProyectoAsync(id);
-        if (!resultado)
-            return BadRequest("Proyecto no encontrado, ya archivado o no se puede archivar.");
-
-        return Ok("Proyecto archivado o eliminado correctamente.");
-    }
-
-
-[HttpPut("{proyectoId}/desarchivar")]
-public async Task<IActionResult> DesarchivarProyecto(int proyectoId)
-{
-    var resultado = await _proyectoService.DesarchivarProyectoAsync(proyectoId);
-
-    if (!resultado)
-        return BadRequest("No se pudo desarchivar el proyecto.");
-
-    return Ok("Proyecto desarchivado correctamente.");
-}
-
-
 }

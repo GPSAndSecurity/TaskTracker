@@ -334,7 +334,10 @@ public async Task<bool> DesarchivarProyectoAsync(int proyectoId)
     await _context.SaveChangesAsync();
     return true;
 }
-
+public async Task<Proyecto?> ObtenerPorIdAsync(int id)
+{
+    return await _context.Proyectos.FindAsync(id);
+}
 
     }
 

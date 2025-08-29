@@ -63,6 +63,7 @@ builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<ProyectoService>();
 builder.Services.AddScoped<TareaService>();
+builder.Services.AddScoped<AuditoriaService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

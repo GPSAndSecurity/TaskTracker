@@ -23,6 +23,7 @@ public class AppDbContext : DbContext
 
     public DbSet<SubTarea> SubTareas { get; set; }
 
+    public DbSet<Auditoria> Auditorias { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -102,6 +103,11 @@ public class AppDbContext : DbContext
             .HasForeignKey(st => st.TareaId)
             .OnDelete(DeleteBehavior.Cascade);
 
+modelBuilder.Entity<Auditoria>()
+    .HasOne(a => a.Usuario)
+    .WithMany()
+    .HasForeignKey(a => a.UsuarioId)
+    .OnDelete(DeleteBehavior.SetNull);
 
     }
 

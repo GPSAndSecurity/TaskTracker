@@ -9,10 +9,12 @@ using System.Security.Claims;
 public class ProyectosColaboradorController : ControllerBase
 {
     private readonly ProyectoService _proyectoService;
+    private readonly AuditoriaService _auditoria;  // Inyectar auditoría
 
-    public ProyectosColaboradorController(ProyectoService proyectoService)
+    public ProyectosColaboradorController(ProyectoService proyectoService, AuditoriaService auditoria)
     {
         _proyectoService = proyectoService;
+        _auditoria = auditoria;  // asignar
     }
 
     // GET: api/proyectos/asignados
@@ -60,6 +62,14 @@ public class ProyectosColaboradorController : ControllerBase
         var resultado = await _proyectoService.EliminarColaboradorDeProyectoAsync(proyectoId, usuarioId, empresaId.Value);
         if (!resultado)
             return NotFound("No se encontró el colaborador asignado o no pertenece a la empresa.");
+
+        // Registrar auditoría
+        await _auditoria.RegistrarEventoAsync(
+            accion: "Eliminar colaborador",
+            entidad: "ProyectoColaborador",
+            entidadId: proyectoId,
+            descripcion: $"Se eliminó al colaborador {usuarioId} del proyecto {proyectoId}"
+        );
 
         return NoContent();
     }
