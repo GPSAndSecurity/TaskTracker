@@ -407,11 +407,55 @@ public class TareaService
     }
 
 
-public async Task<List<SubTarea>> ObtenerSubTareasPorTareaAsync(int tareaId, int empresaId)
+    public async Task<List<SubTarea>> ObtenerSubTareasPorTareaAsync(int tareaId, int empresaId)
+    {
+        return await _context.SubTareas
+            .Where(st => st.TareaId == tareaId && st.Tarea.Proyecto.EmpresaId == empresaId)
+            .ToListAsync();
+    }
+    public async Task<bool> ActualizarEstadoSubtareaAsync(int tareaId, int subtareaId, bool completada)
+    {
+        var subtarea = await _context.SubTareas
+            .FirstOrDefaultAsync(st => st.Id == subtareaId && st.TareaId == tareaId);
+
+        if (subtarea == null)
+            return false;
+
+        subtarea.Completada = completada;
+        return await _context.SaveChangesAsync() > 0;
+    }
+
+    public async Task<bool> VerificarSubtareaExisteAsync(int tareaId, int subtareaId, int empresaId)
+    {
+        return await _context.SubTareas
+            .AnyAsync(st => st.Id == subtareaId &&
+                            st.TareaId == tareaId &&
+                            st.Tarea.Proyecto.EmpresaId == empresaId);
+    }
+
+
+public async Task<SubTarea?> CrearSubtareaAsync(int tareaId, CreateSubtareaDto dto, int empresaId)
 {
-    return await _context.SubTareas
-        .Where(st => st.TareaId == tareaId && st.Tarea.Proyecto.EmpresaId == empresaId)
-        .ToListAsync();
+    // Validar que la tarea exista y pertenezca a la empresa
+    var tarea = await _context.Tareas
+        .Include(t => t.Proyecto)
+        .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto.EmpresaId == empresaId);
+
+    if (tarea == null)
+        return null;
+
+    var subtarea = new SubTarea
+    {
+        TareaId = tareaId,
+        Descripcion = dto.Descripcion,
+        Completada = dto.Completada
+    };
+
+    _context.SubTareas.Add(subtarea);
+    await _context.SaveChangesAsync();
+
+    return subtarea;
 }
+
 
 }
