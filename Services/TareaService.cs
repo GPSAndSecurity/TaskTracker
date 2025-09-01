@@ -398,11 +398,19 @@ public class TareaService
     }
 
 
-public async Task<List<Tarea>> ObtenerTareasArchivadasAsync(int empresaId)
+    public async Task<List<Tarea>> ObtenerTareasArchivadasAsync(int empresaId)
+    {
+        return await _context.Tareas
+            .Include(t => t.Proyecto)
+            .Where(t => t.Estado == EstadoTarea.Archivada && t.Proyecto!.EmpresaId == empresaId)
+            .ToListAsync();
+    }
+
+
+public async Task<List<SubTarea>> ObtenerSubTareasPorTareaAsync(int tareaId, int empresaId)
 {
-    return await _context.Tareas
-        .Include(t => t.Proyecto)
-        .Where(t => t.Estado == EstadoTarea.Archivada && t.Proyecto!.EmpresaId == empresaId)
+    return await _context.SubTareas
+        .Where(st => st.TareaId == tareaId && st.Tarea.Proyecto.EmpresaId == empresaId)
         .ToListAsync();
 }
 

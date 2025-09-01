@@ -49,17 +49,23 @@ namespace TaskTracker.Controllers
             var colaboradores = await _tareaService.ObtenerColaboradoresPorTareaAsync(tareaId, empresaId.Value);
 
             // Retornar tarea con comentarios mapeados
-            var tareaDto = new
-            {
-                tarea.Id,
-                tarea.Descripcion,
-                tarea.Ubicacion,
-                tarea.Estado,
-                tarea.FechaInicioEstimado,
-                tarea.FechaFinEstimado,
-                Comentarios = comentariosConNombre,
-                Asignados = colaboradores
-            };
+           var tareaDto = new
+{
+    tarea.Id,
+    tarea.Descripcion,
+    tarea.Ubicacion,
+    tarea.Estado,
+    tarea.FechaInicioEstimado,
+    tarea.FechaFinEstimado,
+    Comentarios = comentariosConNombre,
+    Asignados = colaboradores,
+    SubTareas = tarea.SubTareas.Select(st => new SubTareaDto
+    {
+        Id = st.Id,
+        Descripcion = st.Descripcion,
+        Completada = st.Completada
+    }).ToList()
+};
 
             return Ok(tareaDto);
         }
@@ -182,6 +188,23 @@ namespace TaskTracker.Controllers
             return int.TryParse(usuarioClaim, out var id) ? id : null;
         }
 
+[HttpGet("{tareaId}/subtareas")]
+public async Task<IActionResult> ObtenerSubTareas(int tareaId)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null) return Unauthorized();
+
+    var subtareas = await _tareaService.ObtenerSubTareasPorTareaAsync(tareaId, empresaId.Value);
+
+    var subtareaDtos = subtareas.Select(st => new SubTareaDto
+    {
+        Id = st.Id,
+        Descripcion = st.Descripcion,
+        Completada = st.Completada
+    }).ToList();
+
+    return Ok(subtareaDtos);
+}
 
 
         [HttpGet("{tareaId}/colaboradores")]
