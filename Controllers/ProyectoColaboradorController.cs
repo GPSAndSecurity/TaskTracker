@@ -68,7 +68,8 @@ public class ProyectosColaboradorController : ControllerBase
             accion: "Eliminar colaborador",
             entidad: "ProyectoColaborador",
             entidadId: proyectoId,
-            descripcion: $"Se eliminó al colaborador {usuarioId} del proyecto {proyectoId}"
+            descripcion: $"Se eliminó al colaborador {usuarioId} del proyecto {proyectoId}",
+             generaNotificacion: true
         );
 
         return NoContent();

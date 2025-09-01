@@ -55,7 +55,8 @@ public async Task<ActionResult<Cliente>> CrearCliente(CreateClienteDto dto)
         accion: "Crear Cliente",
         entidad: "Cliente",
         entidadId: cliente.Id,
-        descripcion: $"Se creó el cliente '{cliente.Nombre}'"
+        descripcion: $"Se creó el cliente '{cliente.Nombre}'",
+        generaNotificacion: true
     );
 
     return CreatedAtAction(nameof(GetClientePorId), new { id = cliente.Id }, cliente);
@@ -101,7 +102,8 @@ public async Task<IActionResult> EliminarCliente(int id)
         accion: "Eliminar Cliente",
         entidad: "Cliente",
         entidadId: id,
-        descripcion: $"Se eliminó el cliente '{cliente.Nombre}'"
+        descripcion: $"Se eliminó el cliente '{cliente.Nombre}'",
+         generaNotificacion: true
     );
 
     return NoContent();

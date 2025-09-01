@@ -44,7 +44,8 @@ public class ProyectosController : ControllerBase
             accion: "Crear Proyecto",
             entidad: "Proyecto",
             entidadId: proyecto.Id,
-            descripcion: $"Se creó el proyecto '{proyecto.Nombre}'"
+            descripcion: $"Se creó el proyecto '{proyecto.Nombre}'",
+             generaNotificacion: true
         );
 
         return CreatedAtAction(nameof(ObtenerProyectos), new { id = proyecto.Id }, proyecto);
@@ -70,7 +71,8 @@ public class ProyectosController : ControllerBase
             accion: "Eliminar Proyecto",
             entidad: "Proyecto",
             entidadId: id,
-            descripcion: $"Se eliminó el proyecto '{proyecto.Nombre}'"
+            descripcion: $"Se eliminó el proyecto '{proyecto.Nombre}'",
+             generaNotificacion: true
         );
 
         return NoContent();
@@ -92,7 +94,8 @@ public class ProyectosController : ControllerBase
             accion: "Archivar Proyecto",
             entidad: "Proyecto",
             entidadId: id,
-            descripcion: $"Se archivó el proyecto '{proyecto.Nombre}'"
+            descripcion: $"Se archivó el proyecto '{proyecto.Nombre}'",
+             generaNotificacion: true
         );
 
         return Ok("Proyecto archivado correctamente.");
@@ -114,7 +117,8 @@ public class ProyectosController : ControllerBase
             accion: "Desarchivar Proyecto",
             entidad: "Proyecto",
             entidadId: proyectoId,
-            descripcion: $"Se desarchivó el proyecto '{proyecto.Nombre}'"
+            descripcion: $"Se desarchivó el proyecto '{proyecto.Nombre}'",
+             generaNotificacion: true
         );
 
         return Ok("Proyecto desarchivado correctamente.");

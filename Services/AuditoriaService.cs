@@ -12,6 +12,19 @@ public class AuditoriaFilterDto
     public int? UsuarioId { get; set; }
 }
 
+public class NotificacionDto
+{
+    public int Id { get; set; }
+    public string Accion { get; set; }
+    public string Entidad { get; set; }
+    public int? EntidadId { get; set; }
+    public string Descripcion { get; set; }
+    public DateTime Fecha { get; set; }
+    public bool Visto { get; set; } // <-- agrega esta propiedad si es útil
+
+    }
+
+
 namespace TaskTracker.Services
 {
     public class AuditoriaService
@@ -25,23 +38,26 @@ namespace TaskTracker.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task RegistrarEventoAsync(string accion, string entidad, int? entidadId, string? descripcion)
-        {
-            var usuarioId = ObtenerUsuarioIdDesdeToken();
+        public async Task RegistrarEventoAsync(string accion, string entidad, int? entidadId, string? descripcion, bool generaNotificacion = false)
+{
+    var usuarioId = ObtenerUsuarioIdDesdeToken();
 
-            var log = new Auditoria
-            {
-                UsuarioId = usuarioId,
-                Accion = accion,
-                Entidad = entidad,
-                EntidadId = entidadId,
-                Descripcion = descripcion,
-                Fecha = DateTime.UtcNow
-            };
+    var log = new Auditoria
+    {
+        UsuarioId = usuarioId,
+        Accion = accion,
+        Entidad = entidad,
+        EntidadId = entidadId,
+        Descripcion = descripcion,
+        Fecha = DateTime.UtcNow,
+        GeneraNotificacion = generaNotificacion,
+        Visto = false
+    };
 
-            _context.Auditorias.Add(log);
-            await _context.SaveChangesAsync();
-        }
+    _context.Auditorias.Add(log);
+    await _context.SaveChangesAsync();
+}
+
 
         private int? ObtenerUsuarioIdDesdeToken()
         {
@@ -76,6 +92,47 @@ namespace TaskTracker.Services
                 .ToListAsync();
         }
 
+        public async Task<List<NotificacionDto>> ObtenerNotificacionesPorEmpresaAsync(int empresaId)
+{
+    var usuarioIdActual = ObtenerUsuarioIdDesdeToken();
+
+    var notificaciones = await _context.Auditorias
+        .Where(a => a.GeneraNotificacion &&
+                    !a.Visto &&
+                    a.Usuario != null &&
+                    a.Usuario.EmpresaId == empresaId &&
+                    a.UsuarioId != usuarioIdActual)  // <-- Aquí filtro las propias
+        .OrderByDescending(a => a.Fecha)
+        .Select(a => new NotificacionDto
+        {
+            Id = a.Id,
+            Accion = a.Accion,
+            Entidad = a.Entidad,
+            EntidadId = a.EntidadId,
+            Descripcion = a.Descripcion,
+            Fecha = a.Fecha,
+            Visto = a.Visto
+
+        })
+        .ToListAsync();
+
+    return notificaciones;
+}
+
+
+
+        public async Task<Auditoria?> MarcarComoVistaAsync(int id)
+{
+    var notificacion = await _context.Auditorias.FirstOrDefaultAsync(a => a.Id == id && a.GeneraNotificacion);
+
+    if (notificacion == null)
+        return null;
+
+    notificacion.Visto = true;
+    await _context.SaveChangesAsync();
+
+    return notificacion;
+}
 
     }
 }

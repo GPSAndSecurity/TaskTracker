@@ -28,7 +28,8 @@ public class EmpresasController : ControllerBase
             accion: "Crear Empresa",
             entidad: "Empresa",
             entidadId: empresa.Id,
-            descripcion: $"Se creó la empresa '{empresa.Nombre}'"
+            descripcion: $"Se creó la empresa '{empresa.Nombre}'",
+            generaNotificacion: true
         );
 
         return CreatedAtAction(nameof(GetEmpresaPorId), new { id = empresa.Id }, empresa);
@@ -65,7 +66,8 @@ public class EmpresasController : ControllerBase
             accion: "Editar Empresa",
             entidad: "Empresa",
             entidadId: id,
-            descripcion: $"Se actualizó la empresa '{empresaAntesDeActualizar.Nombre}'"
+            descripcion: $"Se actualizó la empresa '{empresaAntesDeActualizar.Nombre}'",
+             generaNotificacion: true
         );
 
         return NoContent();
@@ -85,7 +87,8 @@ public class EmpresasController : ControllerBase
             accion: "Eliminar Empresa",
             entidad: "Empresa",
             entidadId: id,
-            descripcion: $"Se eliminó la empresa '{empresaAntesDeEliminar.Nombre}'"
+            descripcion: $"Se eliminó la empresa '{empresaAntesDeEliminar.Nombre}'",
+             generaNotificacion: true
         );
 
         return NoContent();

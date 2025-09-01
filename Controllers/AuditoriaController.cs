@@ -26,4 +26,34 @@ public class AuditoriaController : ControllerBase
 
         return Ok(logs);
     }
+
+[HttpGet("notificaciones")]
+public async Task<IActionResult> ObtenerNotificaciones()
+{
+    var empresaId = ObtenerEmpresaIdDesdeToken();
+    var notificaciones = await _auditoriaService.ObtenerNotificacionesPorEmpresaAsync(empresaId);
+    return Ok(notificaciones);
+}
+
+
+private int ObtenerEmpresaIdDesdeToken()
+{
+    var claim = User.Claims.FirstOrDefault(c => c.Type == "empresaId")?.Value;
+    if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out int empresaId))
+        throw new UnauthorizedAccessException("empresaId inválido en el token");
+
+    return empresaId;
+}
+
+[HttpPatch("marcar-vista/{id}")]
+public async Task<IActionResult> MarcarNotificacionComoVista(int id)
+{
+    var auditoria = await _auditoriaService.MarcarComoVistaAsync(id);
+
+    if (auditoria == null)
+        return NotFound();
+
+    return Ok();
+}
+
 }

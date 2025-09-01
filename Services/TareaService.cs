@@ -93,21 +93,33 @@ public class TareaService
         if (tarea == null || tarea.Proyecto == null || tarea.Proyecto.EmpresaId != empresaId)
             return false;
 
+        // Obtener usuarios válidos
         var usuarios = await _context.Usuarios
             .Where(u => usuarioIds.Contains(u.Id) && u.EmpresaId == empresaId)
             .ToListAsync();
 
-        var asignaciones = usuarios.Select(u => new TareaAsignado
-        {
-            TareaId = tareaId,
-            UsuarioId = u.Id
-        });
+        // Obtener IDs de usuarios ya asignados a la tarea
+        var yaAsignados = await _context.TareaAsignados
+            .Where(ta => ta.TareaId == tareaId && usuarioIds.Contains(ta.UsuarioId))
+            .Select(ta => ta.UsuarioId)
+            .ToListAsync();
 
-        _context.TareaAsignados.AddRange(asignaciones);
+        // Filtrar solo los que aún no están asignados
+        var nuevosAsignados = usuarios
+            .Where(u => !yaAsignados.Contains(u.Id))
+            .Select(u => new TareaAsignado
+            {
+                TareaId = tareaId,
+                UsuarioId = u.Id
+            });
+
+        // Agregar solo los nuevos
+        _context.TareaAsignados.AddRange(nuevosAsignados);
         await _context.SaveChangesAsync();
 
         return true;
     }
+
     public async Task<bool> CambiarEstadoTareaAsync(int tareaId, EstadoTarea nuevoEstado, int empresaId)
     {
         var tarea = await _context.Tareas
@@ -345,34 +357,53 @@ public class TareaService
         return true;
     }
 
-public async Task<List<ProyectoConTareasDto>> ObtenerProyectosAsignadosAUsuarioAsync(int usuarioId, int empresaId)
+    public async Task<List<ProyectoConTareasDto>> ObtenerProyectosAsignadosAUsuarioAsync(int usuarioId, int empresaId)
+    {
+        var proyectos = await _context.Proyectos
+            .Where(p => p.EmpresaId == empresaId &&
+                        p.Tareas.Any(t => t.Asignados.Any(a => a.UsuarioId == usuarioId)))
+            .Select(p => new ProyectoConTareasDto
+            {
+                Id = p.Id,
+                Nombre = p.Nombre,
+                Descripcion = p.Descripcion,
+                FechaInicio = p.FechaInicio,
+                FechaFin = p.FechaFin,
+                Archivado = p.Archivado,
+
+                // Solo tareas asignadas a ese usuario
+                Tareas = p.Tareas
+                    .Where(t => t.Asignados.Any(a => a.UsuarioId == usuarioId))
+                    .Select(t => new TareaDetalleDto
+                    {
+                        Descripcion = t.Descripcion,
+                        FechaInicioEstimado = t.FechaInicioEstimado,
+                        FechaFinEstimado = t.FechaFinEstimado,
+                        Estado = t.Estado
+                    }).ToList()
+            })
+            .ToListAsync();
+
+        return proyectos;
+    }
+
+
+    public async Task<List<Tarea>> ObtenerTareasArchivadasPorProyectoAsync(int proyectoId, int empresaId)
+    {
+        return await _context.Tareas
+            .Where(t => t.ProyectoId == proyectoId &&
+                        t.Proyecto.EmpresaId == empresaId &&
+                        t.Estado == EstadoTarea.Archivada)
+            .ToListAsync();
+    }
+
+
+public async Task<List<Tarea>> ObtenerTareasArchivadasAsync(int empresaId)
 {
-    var proyectos = await _context.Proyectos
-        .Where(p => p.EmpresaId == empresaId &&
-                    p.Tareas.Any(t => t.Asignados.Any(a => a.UsuarioId == usuarioId)))
-        .Select(p => new ProyectoConTareasDto
-        {
-            Id = p.Id,
-            Nombre = p.Nombre,
-            Descripcion = p.Descripcion,
-            FechaInicio = p.FechaInicio,
-            FechaFin = p.FechaFin,
-            Archivado = p.Archivado,
-
-            // Solo tareas asignadas a ese usuario
-            Tareas = p.Tareas
-                .Where(t => t.Asignados.Any(a => a.UsuarioId == usuarioId))
-                .Select(t => new TareaDetalleDto
-                {
-                    Descripcion = t.Descripcion,
-                    FechaInicioEstimado = t.FechaInicioEstimado,
-                    FechaFinEstimado = t.FechaFinEstimado,
-                    Estado = t.Estado
-                }).ToList()
-        })
+    return await _context.Tareas
+        .Include(t => t.Proyecto)
+        .Where(t => t.Estado == EstadoTarea.Archivada && t.Proyecto!.EmpresaId == empresaId)
         .ToListAsync();
-
-    return proyectos;
 }
 
 }

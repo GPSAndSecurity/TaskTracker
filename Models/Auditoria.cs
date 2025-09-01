@@ -14,6 +14,9 @@ namespace TaskTracker.Models
 
         public DateTime Fecha { get; set; } = DateTime.UtcNow;
 
+        public bool GeneraNotificacion { get; set; } = false;
+
+        public bool Visto { get; set; } = false; // 👈 Nuevo campo
 
     }
 }
