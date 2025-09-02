@@ -19,6 +19,17 @@ namespace TaskTracker.Controllers
             _tareaService = tareaService;
             _auditoriaService = auditoriaService;
         }
+        //obtener todas las tareas
+[HttpGet]
+[Authorize(Roles = "admin_empresa,superadmin")]
+public async Task<IActionResult> ObtenerTodasLasTareas()
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null) return Unauthorized();
+
+    var tareas = await _tareaService.ObtenerTodasLasTareasAsync(empresaId.Value);
+    return Ok(tareas);
+}
 
         [HttpGet("por-proyecto/{proyectoId}")]
         public async Task<IActionResult> ObtenerTareasPorProyecto(int proyectoId)
@@ -105,29 +116,41 @@ namespace TaskTracker.Controllers
             });
         }
         [HttpPatch("{tareaId}/estado")]
-        public async Task<IActionResult> CambiarEstadoTarea(int tareaId, [FromBody] EstadoTarea nuevoEstado)
+public async Task<IActionResult> CambiarEstadoTarea(int tareaId, [FromBody] EstadoTarea nuevoEstado)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null) return Unauthorized();
+
+    var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
+    if (tarea == null) return NotFound("Tarea no encontrada.");
+
+    var estadoAnterior = tarea.Estado;
+
+    // ✅ Lógica para evitar marcar como finalizada si hay subtareas pendientes
+    if (nuevoEstado == EstadoTarea.Finalizada)
+    {
+        var subtareas = await _tareaService.ObtenerSubTareasPorTareaAsync(tareaId, empresaId.Value);
+        bool haySubtareasPendientes = subtareas.Any(st => !st.Completada);
+
+        if (haySubtareasPendientes)
         {
-            var empresaId = GetEmpresaIdFromToken();
-            if (empresaId == null) return Unauthorized();
-
-            var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
-            if (tarea == null) return NotFound("Tarea no encontrada.");
-
-            var estadoAnterior = tarea.Estado;
-
-            var exito = await _tareaService.CambiarEstadoTareaAsync(tareaId, nuevoEstado, empresaId.Value);
-            if (!exito) return BadRequest("No se pudo cambiar el estado.");
-
-            await _auditoriaService.RegistrarEventoAsync(
-                accion: "Cambiar Estado",
-                entidad: "Tarea",
-                entidadId: tareaId,
-                descripcion: $"Se cambió el estado de la tarea '{tarea.Descripcion}' de '{estadoAnterior}' a '{nuevoEstado}'",
-                 generaNotificacion: true
-            );
-
-            return NoContent();
+            return BadRequest("No se puede finalizar la tarea porque tiene subtareas pendientes.");
         }
+    }
+
+    var exito = await _tareaService.CambiarEstadoTareaAsync(tareaId, nuevoEstado, empresaId.Value);
+    if (!exito) return BadRequest("No se pudo cambiar el estado.");
+
+    await _auditoriaService.RegistrarEventoAsync(
+        accion: "Cambiar Estado",
+        entidad: "Tarea",
+        entidadId: tareaId,
+        descripcion: $"Se cambió el estado de la tarea '{tarea.Descripcion}' de '{estadoAnterior}' a '{nuevoEstado}'",
+        generaNotificacion: true
+    );
+
+    return NoContent();
+}
 
 
         [HttpDelete("{tareaId}")]

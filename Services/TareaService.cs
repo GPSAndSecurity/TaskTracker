@@ -457,5 +457,18 @@ public async Task<SubTarea?> CrearSubtareaAsync(int tareaId, CreateSubtareaDto d
     return subtarea;
 }
 
+public async Task<List<Tarea>> ObtenerTodasLasTareasAsync(int empresaId)
+{
+    return await _context.Tareas
+        .Include(t => t.Proyecto)
+        .Include(t => t.Comentarios)
+            .ThenInclude(c => c.Usuario)
+        .Include(t => t.Asignados)
+            .ThenInclude(a => a.Usuario)
+        .Include(t => t.Adjuntos)
+        .Include(t => t.SubTareas)
+        .Where(t => t.Proyecto.EmpresaId == empresaId)
+        .ToListAsync();
+}
 
 }
