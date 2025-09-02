@@ -50,6 +50,20 @@ public class ProyectosController : ControllerBase
 
         return CreatedAtAction(nameof(ObtenerProyectos), new { id = proyecto.Id }, proyecto);
     }
+// GET: api/proyectos/{id}
+[HttpGet("{id}")]
+public async Task<ActionResult<Proyecto>> ObtenerProyectoPorId(int id)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null)
+        return Unauthorized("Empresa no identificada en el token.");
+
+    var proyecto = await _proyectoService.ObtenerPorIdAsync(id);
+    if (proyecto == null || proyecto.EmpresaId != empresaId)
+        return NotFound("Proyecto no encontrado o no pertenece a tu empresa.");
+
+    return Ok(proyecto);
+}
 
     // DELETE: api/proyectos/{id}
     [HttpDelete("{id}")]
@@ -123,6 +137,34 @@ public class ProyectosController : ControllerBase
 
         return Ok("Proyecto desarchivado correctamente.");
     }
+
+    // PUT: api/proyectos/{id}
+    [HttpPut("{id}")]
+
+public async Task<IActionResult> ActualizarProyecto(int id, [FromBody] UpdateProyectoDto dto)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null)
+        return Unauthorized("Empresa no identificada en el token.");
+
+    var proyecto = await _proyectoService.ObtenerPorIdAsync(id);
+    if (proyecto == null || proyecto.EmpresaId != empresaId)
+        return NotFound("Proyecto no encontrado o no pertenece a tu empresa.");
+
+    var actualizado = await _proyectoService.ActualizarProyectoAsync(id, dto);
+    if (!actualizado)
+        return BadRequest("No se pudo actualizar el proyecto.");
+
+    await _auditoria.RegistrarEventoAsync(
+        accion: "Actualizar Proyecto",
+        entidad: "Proyecto",
+        entidadId: id,
+        descripcion: $"Se actualizó el proyecto '{proyecto.Nombre}'",
+        generaNotificacion: true
+    );
+
+    return Ok("Proyecto actualizado correctamente.");
+}
 
     // POST: api/proyectos/asignar-colaboradores
     [HttpPost("asignar-colaboradores")]

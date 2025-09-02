@@ -54,6 +54,24 @@ namespace TaskTracker.Services
             return true;
         }
 
+
+        //actualizar proyecto 
+
+public async Task<bool> ActualizarProyectoAsync(int id, UpdateProyectoDto dto)
+{
+    var proyecto = await _context.Proyectos.FindAsync(id);
+    if (proyecto == null)
+        return false;
+
+    proyecto.Nombre = dto.Nombre;
+    proyecto.Descripcion = dto.Descripcion;
+    proyecto.FechaInicio = dto.FechaInicio;
+    proyecto.FechaFin = dto.FechaFin;
+
+    await _context.SaveChangesAsync();
+    return true;
+}
+
         // Asignar colaboradores a un proyecto
         public async Task<bool> AsignarColaboradoresAsync(int empresaId, AsignarColaboradoresProyectoDto dto)
         {

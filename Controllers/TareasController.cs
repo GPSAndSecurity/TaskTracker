@@ -495,8 +495,7 @@ public async Task<IActionResult> CrearSubtarea(int tareaId, [FromBody] CreateSub
     return CreatedAtAction(nameof(ObtenerSubTareas), new { tareaId = tareaId }, subtarea);
 }
 
-        [HttpPut("{tareaId}/subtareas/{subtareaId}/estado")]
-[Authorize(Roles = "admin_empresa,superadmin")]
+[HttpPut("{tareaId}/subtareas/{subtareaId}/estado")]
 public async Task<IActionResult> ActualizarSubtareaEstado(int tareaId, int subtareaId, [FromBody] SubtareaEstadoUpdateDto dto)
 {
     var empresaId = GetEmpresaIdFromToken();
