@@ -1,5 +1,4 @@
 namespace TaskTracker.Models;
-
 public class TareaAdjunto
 {
     public int Id { get; set; }

@@ -3,7 +3,6 @@ using TaskTracker.Data;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 
-
 public class AuditoriaFilterDto
 {
     public DateTime? FechaInicio { get; set; }
@@ -15,10 +14,10 @@ public class AuditoriaFilterDto
 public class NotificacionDto
 {
     public int Id { get; set; }
-    public string Accion { get; set; }
-    public string Entidad { get; set; }
+    public string? Accion { get; set; }
+    public string? Entidad { get; set; }
     public int? EntidadId { get; set; }
-    public string Descripcion { get; set; }
+    public string? Descripcion { get; set; }
     public DateTime Fecha { get; set; }
     public bool Visto { get; set; } // <-- agrega esta propiedad si es útil
 
@@ -120,19 +119,35 @@ namespace TaskTracker.Services
 }
 
 
-
-        public async Task<Auditoria?> MarcarComoVistaAsync(int id)
+public async Task<List<NotificacionDto>> ObtenerNotificacionesParaColaboradorAsync(int usuarioId)
 {
-    var notificacion = await _context.Auditorias.FirstOrDefaultAsync(a => a.Id == id && a.GeneraNotificacion);
-
-    if (notificacion == null)
-        return null;
-
-    notificacion.Visto = true;
-    await _context.SaveChangesAsync();
-
-    return notificacion;
+    return await _context.Auditorias
+        .Where(a => a.UsuarioId == usuarioId) // Solo filtro por usuario para probar
+        .OrderByDescending(a => a.Fecha)
+        .Select(a => new NotificacionDto
+        {
+            Id = a.Id,
+            Accion = a.Accion,
+            Entidad = a.Entidad,
+            EntidadId = a.EntidadId,
+            Descripcion = a.Descripcion,
+            Fecha = a.Fecha,
+            Visto = a.Visto
+        })
+        .ToListAsync();
 }
+        public async Task<Auditoria?> MarcarComoVistaAsync(int id)
+        {
+            var notificacion = await _context.Auditorias.FirstOrDefaultAsync(a => a.Id == id && a.GeneraNotificacion);
+
+            if (notificacion == null)
+                return null;
+
+            notificacion.Visto = true;
+            await _context.SaveChangesAsync();
+
+            return notificacion;
+        }
 
     }
 }

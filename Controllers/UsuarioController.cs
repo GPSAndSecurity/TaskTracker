@@ -122,19 +122,7 @@ public async Task<ActionResult<IEnumerable<Usuario>>> ObtenerUsuarios([FromQuery
         var actualizado = await _service.ActualizarUsuarioAsync(id, dto);
         return Ok(actualizado);
     }
-    //eliminar usuario 
-   // [HttpDelete("{id}")]
-    //[Authorize(Roles = "superadmin")]
-    //public async Task<IActionResult> EliminarUsuario(int id)
-    //{
-      //  var usuario = await _service.ObtenerUsuarioPorIdAsync(id);
-        //if (usuario == null)
-          //  return NotFound();
-
-  //      await _service.EliminarUsuarioAsync(id);
-    //    return NoContent();
-    //}
-
+   
     // Inactivar un usuario (superadmin o admin_empresa)
 [HttpPatch("{id}/inactivar")]
 [Authorize(Roles = "superadmin,admin_empresa")]

@@ -81,18 +81,7 @@ public async Task<List<Usuario>> ObtenerColaboradoresPorEmpresaAsync(int empresa
         return usuario;
     }
 
-    // Eliminar un usuario
-    //public async Task<bool> EliminarUsuarioAsync(int id)
-    //{
- //       var usuario = await _context.Usuarios.FindAsync(id);
-   //     if (usuario == null)
-     //       return false;
-//
-  //      _context.Usuarios.Remove(usuario);
-    //    await _context.SaveChangesAsync();
-      //  return true;
-  //  }
-
+   
     // Hash de la contraseña, usando el SHA256 porque segun es mejor bcrypt. es mas rapido y seguro que bcrypt 
     private string HashPassword(string password)
     {

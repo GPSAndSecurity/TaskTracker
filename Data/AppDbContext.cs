@@ -94,6 +94,14 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(tc => tc.UsuarioId)
             .OnDelete(DeleteBehavior.Cascade);
+
+
+            modelBuilder.Entity<Tarea>()
+    .HasOne(t => t.Cliente)
+    .WithMany()
+    .HasForeignKey(t => t.ClienteId)
+    .OnDelete(DeleteBehavior.SetNull);
+    
         modelBuilder.Entity<SubTarea>()
     .HasKey(st => st.Id);
 

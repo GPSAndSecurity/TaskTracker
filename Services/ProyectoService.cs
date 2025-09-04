@@ -24,7 +24,8 @@ namespace TaskTracker.Services
                 EmpresaId = empresaId,
                 FechaCreacion = DateTime.UtcNow,
                 FechaInicio = dto.FechaInicio,
-                FechaFin = dto.FechaFin
+                FechaFin = dto.FechaFin,
+                
             };
 
             _context.Proyectos.Add(proyecto);
@@ -163,7 +164,7 @@ public async Task<bool> ActualizarProyectoAsync(int id, UpdateProyectoDto dto)
                 Descripcion = p.Descripcion,
                 FechaInicio = p.FechaInicio,
                 FechaFin = p.FechaFin,
-                Archivado = p.Archivado,  // <--- ¡Aquí lo agregas!
+                Archivado = p.Archivado,  
                 Tareas = p.Tareas
                     .Where(t => estadosValidos.Contains(t.Estado))
                     .Select(t => new TareaDetalleDto
@@ -271,7 +272,7 @@ public async Task<bool> ActualizarProyectoAsync(int id, UpdateProyectoDto dto)
             return true;
         }
 
-        // 🔹 Obtener proyectos con avance filtrados por colaborador
+        // Obtener proyectos con avance filtrados por colaborador
         public async Task<List<ProyectoConAvanceDto>> ObtenerProyectosConAvancePorColaboradorAsync(int usuarioId)
         {
             var proyectos = await _context.Proyectos
@@ -301,7 +302,7 @@ public async Task<bool> ActualizarProyectoAsync(int id, UpdateProyectoDto dto)
             }).ToList();
         }
 
-        // 🔹 Contar proyectos asignados a un colaborador
+        // Contar proyectos asignados a un colaborador
         public async Task<int> ContarProyectosAsignadosAColaboradorAsync(int usuarioId)
         {
             return await _context.Proyectos

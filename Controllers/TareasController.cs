@@ -20,16 +20,16 @@ namespace TaskTracker.Controllers
             _auditoriaService = auditoriaService;
         }
         //obtener todas las tareas
-[HttpGet]
-[Authorize(Roles = "admin_empresa,superadmin")]
-public async Task<IActionResult> ObtenerTodasLasTareas()
-{
-    var empresaId = GetEmpresaIdFromToken();
-    if (empresaId == null) return Unauthorized();
+        [HttpGet]
+        [Authorize(Roles = "admin_empresa,superadmin")]
+        public async Task<IActionResult> ObtenerTodasLasTareas()
+        {
+            var empresaId = GetEmpresaIdFromToken();
+            if (empresaId == null) return Unauthorized();
 
-    var tareas = await _tareaService.ObtenerTodasLasTareasAsync(empresaId.Value);
-    return Ok(tareas);
-}
+            var tareas = await _tareaService.ObtenerTodasLasTareasAsync(empresaId.Value);
+            return Ok(tareas);
+        }
 
         [HttpGet("por-proyecto/{proyectoId}")]
         public async Task<IActionResult> ObtenerTareasPorProyecto(int proyectoId)
@@ -41,45 +41,82 @@ public async Task<IActionResult> ObtenerTodasLasTareas()
             return Ok(tareas);
         }
         [HttpGet("{tareaId}")]
-        public async Task<IActionResult> ObtenerDetalleTarea(int tareaId)
+public async Task<IActionResult> ObtenerDetalleTarea(int tareaId)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null) return Unauthorized();
+
+    var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
+    if (tarea == null) return NotFound();
+
+    var comentariosConNombre = tarea.Comentarios.Select(c => new
+    {
+        c.Id,
+        c.TareaId,
+        c.ComentarioTexto,
+        c.FechaComentario,
+        UsuarioNombre = c.Usuario != null ? $"{c.Usuario.Name} {c.Usuario.Lastname}" : "Desconocido"
+    }).ToList();
+
+    var colaboradores = await _tareaService.ObtenerColaboradoresPorTareaAsync(tareaId, empresaId.Value);
+
+    var tareaDto = new
+    {
+        tarea.Id,
+        tarea.Descripcion,
+        tarea.Ubicacion,
+        tarea.Estado,
+        tarea.FechaInicioEstimado,
+        tarea.FechaFinEstimado,
+        Comentarios = comentariosConNombre,
+        Asignados = colaboradores,
+        SubTareas = tarea.SubTareas.Select(st => new SubTareaDto
         {
-            var empresaId = GetEmpresaIdFromToken();
-            if (empresaId == null) return Unauthorized();
+            Id = st.Id,
+            Descripcion = st.Descripcion,
+            Completada = st.Completada
+        }).ToList(),
+        Cliente = tarea.Cliente != null ? new
+        {
+            tarea.Cliente.Id,
+            tarea.Cliente.Nombre,
+            tarea.Cliente.Correo, // u otros campos si quieres mostrar más
+            tarea.Cliente.Telefono
+        } : null,
 
-            var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
-            if (tarea == null) return NotFound();
+        ProyectoId = tarea.ProyectoId  // <--- Agrega esto si no está
 
-            var comentariosConNombre = tarea.Comentarios.Select(c => new
-            {
-                c.Id,
-                c.TareaId,
-                c.ComentarioTexto,
-                c.FechaComentario,
-                UsuarioNombre = c.Usuario != null ? $"{c.Usuario.Name} {c.Usuario.Lastname}" : "Desconocido"
-            }).ToList();
-            var colaboradores = await _tareaService.ObtenerColaboradoresPorTareaAsync(tareaId, empresaId.Value);
+    };
 
-            // Retornar tarea con comentarios mapeados
-            var tareaDto = new
-            {
-                tarea.Id,
-                tarea.Descripcion,
-                tarea.Ubicacion,
-                tarea.Estado,
-                tarea.FechaInicioEstimado,
-                tarea.FechaFinEstimado,
-                Comentarios = comentariosConNombre,
-                Asignados = colaboradores,
-                SubTareas = tarea.SubTareas.Select(st => new SubTareaDto
-                {
-                    Id = st.Id,
-                    Descripcion = st.Descripcion,
-                    Completada = st.Completada
-                }).ToList()
-            };
+    return Ok(tareaDto);
+}
 
-            return Ok(tareaDto);
-        }
+[HttpPost("{tareaId}/asignar-cliente")]
+[Authorize(Roles = "admin_empresa,superadmin")]
+public async Task<IActionResult> AsignarCliente(int tareaId, [FromBody] AsignarClienteTareaDto dto)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null || tareaId != dto.TareaId)
+        return Unauthorized();
+
+    var exito = await _tareaService.AsignarClienteATareaAsync(dto.TareaId, dto.ClienteId, empresaId.Value);
+    if (!exito) return BadRequest("No se pudo asignar el cliente. Verifica que el cliente exista y pertenezca a la empresa.");
+
+    string accion = dto.ClienteId.HasValue ? "Asignar Cliente" : "Desasignar Cliente";
+    string descripcion = dto.ClienteId.HasValue
+        ? $"Se asignó el cliente ID {dto.ClienteId} a la tarea ID {dto.TareaId}"
+        : $"Se desasignó el cliente de la tarea ID {dto.TareaId}";
+
+    await _auditoriaService.RegistrarEventoAsync(
+        accion: accion,
+        entidad: "Tarea",
+        entidadId: dto.TareaId,
+        descripcion: descripcion,
+        generaNotificacion: true
+    );
+
+    return NoContent();
+}
 
 
         [HttpPost("{tareaId}/comentarios")]
@@ -116,42 +153,41 @@ public async Task<IActionResult> ObtenerTodasLasTareas()
             });
         }
         [HttpPatch("{tareaId}/estado")]
-public async Task<IActionResult> CambiarEstadoTarea(int tareaId, [FromBody] EstadoTarea nuevoEstado)
-{
-    var empresaId = GetEmpresaIdFromToken();
-    if (empresaId == null) return Unauthorized();
-
-    var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
-    if (tarea == null) return NotFound("Tarea no encontrada.");
-
-    var estadoAnterior = tarea.Estado;
-
-    // ✅ Lógica para evitar marcar como finalizada si hay subtareas pendientes
-    if (nuevoEstado == EstadoTarea.Finalizada)
-    {
-        var subtareas = await _tareaService.ObtenerSubTareasPorTareaAsync(tareaId, empresaId.Value);
-        bool haySubtareasPendientes = subtareas.Any(st => !st.Completada);
-
-        if (haySubtareasPendientes)
+        public async Task<IActionResult> CambiarEstadoTarea(int tareaId, [FromBody] EstadoTarea nuevoEstado)
         {
-            return BadRequest("No se puede finalizar la tarea porque tiene subtareas pendientes.");
+            var empresaId = GetEmpresaIdFromToken();
+            if (empresaId == null) return Unauthorized();
+
+            var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
+            if (tarea == null) return NotFound("Tarea no encontrada.");
+
+            var estadoAnterior = tarea.Estado;
+
+            // ✅ Lógica para evitar marcar como finalizada si hay subtareas pendientes
+            if (nuevoEstado == EstadoTarea.Finalizada)
+            {
+                var subtareas = await _tareaService.ObtenerSubTareasPorTareaAsync(tareaId, empresaId.Value);
+                bool haySubtareasPendientes = subtareas.Any(st => !st.Completada);
+
+                if (haySubtareasPendientes)
+                {
+                    return BadRequest("No se puede finalizar la tarea porque tiene subtareas pendientes.");
+                }
+            }
+
+            var exito = await _tareaService.CambiarEstadoTareaAsync(tareaId, nuevoEstado, empresaId.Value);
+            if (!exito) return BadRequest("No se pudo cambiar el estado.");
+
+            await _auditoriaService.RegistrarEventoAsync(
+                accion: "Cambiar Estado",
+                entidad: "Tarea",
+                entidadId: tareaId,
+                descripcion: $"Se cambió el estado de la tarea '{tarea.Descripcion}' de '{estadoAnterior}' a '{nuevoEstado}'",
+                generaNotificacion: true
+            );
+
+            return NoContent();
         }
-    }
-
-    var exito = await _tareaService.CambiarEstadoTareaAsync(tareaId, nuevoEstado, empresaId.Value);
-    if (!exito) return BadRequest("No se pudo cambiar el estado.");
-
-    await _auditoriaService.RegistrarEventoAsync(
-        accion: "Cambiar Estado",
-        entidad: "Tarea",
-        entidadId: tareaId,
-        descripcion: $"Se cambió el estado de la tarea '{tarea.Descripcion}' de '{estadoAnterior}' a '{nuevoEstado}'",
-        generaNotificacion: true
-    );
-
-    return NoContent();
-}
-
 
         [HttpDelete("{tareaId}")]
         public async Task<IActionResult> EliminarTarea(int tareaId)
@@ -229,6 +265,31 @@ public async Task<IActionResult> CambiarEstadoTarea(int tareaId, [FromBody] Esta
             return Ok(subtareaDtos);
         }
 
+[HttpPut("{tareaId}/cliente")]
+[Authorize(Roles = "admin_empresa,superadmin")]
+public async Task<IActionResult> AsignarClienteATarea(int tareaId, [FromBody] AsignarClienteTareaDto dto)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null) return Unauthorized();
+
+    if (tareaId != dto.TareaId)
+        return BadRequest("El ID de la tarea en la URL no coincide con el del cuerpo.");
+
+    var exito = await _tareaService.AsignarClienteATareaAsync(dto, empresaId.Value);
+    if (!exito) return BadRequest("No se pudo asignar el cliente a la tarea.");
+
+    await _auditoriaService.RegistrarEventoAsync(
+        accion: "Asignar Cliente",
+        entidad: "Tarea",
+        entidadId: tareaId,
+        descripcion: dto.ClienteId.HasValue
+            ? $"Se asignó el cliente ID {dto.ClienteId.Value} a la tarea ID {tareaId}"
+            : $"Se desasignó el cliente de la tarea ID {tareaId}",
+        generaNotificacion: true
+    );
+
+    return Ok("Cliente asignado correctamente.");
+}
 
         [HttpGet("{tareaId}/colaboradores")]
         public async Task<ActionResult<List<UsuarioDto>>> ObtenerColaboradoresPorTarea(int tareaId)
@@ -239,7 +300,6 @@ public async Task<IActionResult> CambiarEstadoTarea(int tareaId, [FromBody] Esta
             var colaboradores = await _tareaService.ObtenerColaboradoresPorTareaAsync(tareaId, empresaId.Value);
             return Ok(colaboradores);
         }
-
 
         [HttpPost]
         [Authorize(Roles = "admin_empresa,superadmin")]
@@ -497,49 +557,54 @@ public async Task<IActionResult> CambiarEstadoTarea(int tareaId, [FromBody] Esta
             var tareas = await _tareaService.ObtenerTareasArchivadasPorProyectoAsync(proyectoId, empresaId.Value);
             return Ok(tareas);
         }
-[HttpPost("{tareaId}/subtareas")]
-[Authorize(Roles = "admin_empresa,superadmin")]
-public async Task<IActionResult> CrearSubtarea(int tareaId, [FromBody] CreateSubtareaDto dto)
-{
-    var empresaId = GetEmpresaIdFromToken();
-    if (empresaId == null) return Unauthorized();
+        [HttpPost("{tareaId}/subtareas")]
+        [Authorize(Roles = "admin_empresa,superadmin")]
+        public async Task<IActionResult> CrearSubtarea(int tareaId, [FromBody] CreateSubtareaDto dto)
+        {
+            var empresaId = GetEmpresaIdFromToken();
+            if (empresaId == null) return Unauthorized();
 
-    var subtarea = await _tareaService.CrearSubtareaAsync(tareaId, dto, empresaId.Value);
-    if (subtarea == null) return BadRequest("No se pudo crear la subtarea.");
+            var subtarea = await _tareaService.CrearSubtareaAsync(tareaId, dto, empresaId.Value);
+            if (subtarea == null) return BadRequest("No se pudo crear la subtarea.");
 
-    await _auditoriaService.RegistrarEventoAsync(
-        accion: "Crear Subtarea",
-        entidad: "Subtarea",
-        entidadId: subtarea.Id,
-        descripcion: $"Se creó la subtarea '{subtarea.Descripcion}' para la tarea ID {tareaId}",
-        generaNotificacion: true
-    );
+            await _auditoriaService.RegistrarEventoAsync(
+                accion: "Crear Subtarea",
+                entidad: "Subtarea",
+                entidadId: subtarea.Id,
+                descripcion: $"Se creó la subtarea '{subtarea.Descripcion}' para la tarea ID {tareaId}",
+                generaNotificacion: true
+            );
 
-    return CreatedAtAction(nameof(ObtenerSubTareas), new { tareaId = tareaId }, subtarea);
-}
+            return CreatedAtAction(nameof(ObtenerSubTareas), new { tareaId = tareaId }, subtarea);
+        }
 
-[HttpPut("{tareaId}/subtareas/{subtareaId}/estado")]
-public async Task<IActionResult> ActualizarSubtareaEstado(int tareaId, int subtareaId, [FromBody] SubtareaEstadoUpdateDto dto)
-{
-    var empresaId = GetEmpresaIdFromToken();
-    if (empresaId == null) return Unauthorized();
+        [HttpPut("{tareaId}/subtareas/{subtareaId}/estado")]
+        public async Task<IActionResult> ActualizarSubtareaEstado(int tareaId, int subtareaId, [FromBody] SubtareaEstadoUpdateDto dto)
+        {
+            var empresaId = GetEmpresaIdFromToken();
+            if (empresaId == null) return Unauthorized();
 
-    // Validar si la tarea y la subtarea pertenecen a la empresa
-    bool existe = await _tareaService.VerificarSubtareaExisteAsync(tareaId, subtareaId, empresaId.Value);
-    if (!existe) return NotFound();
+            // Validar si la tarea y la subtarea pertenecen a la empresa
+            bool existe = await _tareaService.VerificarSubtareaExisteAsync(tareaId, subtareaId, empresaId.Value);
+            if (!existe) return NotFound();
 
-    var resultado = await _tareaService.ActualizarEstadoSubtareaAsync(tareaId, subtareaId, dto.Completada);
+            var resultado = await _tareaService.ActualizarEstadoSubtareaAsync(tareaId, subtareaId, dto.Completada);
 
-    if (!resultado)
-        return BadRequest("No se pudo actualizar la subtarea.");
+            if (!resultado)
+                return BadRequest("No se pudo actualizar la subtarea.");
 
-    return NoContent();
-}
+            return NoContent();
+        }
 
-// DTO para recibir el estado actualizado
-public class SubtareaEstadoUpdateDto
-{
-    public bool Completada { get; set; }
-}
+        // DTO para recibir el estado actualizado
+        public class SubtareaEstadoUpdateDto
+        {
+            public bool Completada { get; set; }
+        }
+
+
+        
     }
+    
+    
 }

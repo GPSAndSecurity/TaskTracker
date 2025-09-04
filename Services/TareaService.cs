@@ -69,20 +69,48 @@ public class TareaService
             .ToListAsync();
     }
 
-    public async Task<Tarea?> ObtenerTareaDetalleAsync(int tareaId, int empresaId)
-    {
-        var tarea = await _context.Tareas
-            .Include(t => t.Comentarios)
-                .ThenInclude(c => c.Usuario)
-            .Include(t => t.Asignados)
-                .ThenInclude(a => a.Usuario)
-            .Include(t => t.Adjuntos)
-            .Include(t => t.SubTareas)
-            .Include(t => t.Proyecto)
-            .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto!.EmpresaId == empresaId);
+   public async Task<Tarea?> ObtenerTareaDetalleAsync(int tareaId, int empresaId)
+{
+    var tarea = await _context.Tareas
+        .Include(t => t.Comentarios)
+            .ThenInclude(c => c.Usuario)
+        .Include(t => t.Asignados)
+            .ThenInclude(a => a.Usuario)
+        .Include(t => t.Adjuntos)
+        .Include(t => t.SubTareas)
+        .Include(t => t.Proyecto)
+        .Include(t => t.Cliente) // 👈 Esto es lo que te faltaba
+        .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto!.EmpresaId == empresaId);
 
-        return tarea;
+    return tarea;
+}
+public async Task<bool> AsignarClienteATareaAsync(int tareaId, int? clienteId, int empresaId)
+{
+    var tarea = await _context.Tareas
+        .Include(t => t.Proyecto)
+        .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto.EmpresaId == empresaId);
+
+    if (tarea == null)
+        return false;
+
+    if (clienteId.HasValue)
+    {
+        var cliente = await _context.Clientes
+            .FirstOrDefaultAsync(c => c.Id == clienteId.Value && c.EmpresaId == empresaId);
+
+        if (cliente == null)
+            return false;
+
+        tarea.ClienteId = clienteId.Value;
     }
+    else
+    {
+        tarea.ClienteId = null; // desasignar
+    }
+
+    await _context.SaveChangesAsync();
+    return true;
+}
 
     public async Task<bool> AsignarColaboradoresATareaAsync(int tareaId, List<int> usuarioIds, int empresaId)
     {
@@ -93,18 +121,18 @@ public class TareaService
         if (tarea == null || tarea.Proyecto == null || tarea.Proyecto.EmpresaId != empresaId)
             return false;
 
-        // Obtener usuarios válidos
+        
         var usuarios = await _context.Usuarios
             .Where(u => usuarioIds.Contains(u.Id) && u.EmpresaId == empresaId)
             .ToListAsync();
 
-        // Obtener IDs de usuarios ya asignados a la tarea
+        
         var yaAsignados = await _context.TareaAsignados
             .Where(ta => ta.TareaId == tareaId && usuarioIds.Contains(ta.UsuarioId))
             .Select(ta => ta.UsuarioId)
             .ToListAsync();
 
-        // Filtrar solo los que aún no están asignados
+        
         var nuevosAsignados = usuarios
             .Where(u => !yaAsignados.Contains(u.Id))
             .Select(u => new TareaAsignado
@@ -113,7 +141,7 @@ public class TareaService
                 UsuarioId = u.Id
             });
 
-        // Agregar solo los nuevos
+        
         _context.TareaAsignados.AddRange(nuevosAsignados);
         await _context.SaveChangesAsync();
 
@@ -151,13 +179,13 @@ public class TareaService
     public async Task<(TareaComentario comentario, string usuarioNombre)?> AgregarComentarioAsync(
        int tareaId, int usuarioId, string comentarioTexto, int empresaId)
     {
-        // Verificar que el usuario pertenece a la empresa
+        
         var usuario = await _context.Usuarios
             .FirstOrDefaultAsync(u => u.Id == usuarioId && u.EmpresaId == empresaId);
 
         if (usuario == null) return null;
 
-        // Verificar que la tarea existe
+        
         var tarea = await _context.Tareas
             .FirstOrDefaultAsync(t => t.Id == tareaId);
 
@@ -184,7 +212,7 @@ public class TareaService
         var adjunto = new TareaAdjunto
         {
             TareaId = tareaId,
-            ArchivoUrl = archivoUrl, // No le agregues "/Uploads/"
+            ArchivoUrl = archivoUrl, 
             NombreArchivo = nombreArchivo,
             FechaSubida = DateTime.UtcNow
         };
@@ -203,7 +231,6 @@ public class TareaService
 
     public async Task<List<UsuarioDto>> ObtenerColaboradoresPorTareaAsync(int tareaId, int empresaId)
     {
-        // Verificar que la tarea exista y pertenezca a la empresa
         var tarea = await _context.Tareas
             .Include(t => t.Proyecto)
             .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto.EmpresaId == empresaId);
@@ -211,7 +238,7 @@ public class TareaService
         if (tarea == null)
             return new List<UsuarioDto>();
 
-        // Obtener usuarios asignados a la tarea
+        
         var colaboradores = await _context.TareaAsignados
             .Where(ta => ta.TareaId == tareaId)
             .Include(ta => ta.Usuario)
@@ -243,7 +270,7 @@ public class TareaService
 
     public async Task<bool> EliminarColaboradorDeTareaAsync(int tareaId, int usuarioId, int empresaId)
     {
-        // Verificar que la tarea exista y pertenezca a la empresa
+        
         var tarea = await _context.Tareas
             .Include(t => t.Proyecto)
             .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto.EmpresaId == empresaId);
@@ -251,7 +278,6 @@ public class TareaService
         if (tarea == null)
             return false;
 
-        // Buscar la asignación del colaborador en la tarea
         var asignacion = await _context.TareaAsignados
             .FirstOrDefaultAsync(ta => ta.TareaId == tareaId && ta.UsuarioId == usuarioId);
 
@@ -283,7 +309,7 @@ public class TareaService
         {
             var encoder = new JpegEncoder
             {
-                Quality = 75 // Compresión al 75% de calidad
+                Quality = 75 
             };
             await image.SaveAsync(outputPath, encoder);
         }
@@ -325,7 +351,6 @@ public class TareaService
             FechaComentario = a.FechaSubida
         });
 
-        // Mezclamos y ordenamos por fecha
         var mezclado = comentariosDtos.Concat(adjuntosDtos)
             .OrderBy(ca => ca.FechaComentario)
             .ToList();
@@ -349,9 +374,6 @@ public class TareaService
         var tarea = await _context.Tareas.FindAsync(tareaId);
         if (tarea == null || tarea.Estado != EstadoTarea.Archivada)
             return false;
-
-        // Aquí puedes decidir a qué estado vuelve al desarchivar
-        // Por ejemplo, Pendiente:
         tarea.Estado = EstadoTarea.Pendiente;
         await _context.SaveChangesAsync();
         return true;
@@ -371,7 +393,6 @@ public class TareaService
                 FechaFin = p.FechaFin,
                 Archivado = p.Archivado,
 
-                // Solo tareas asignadas a ese usuario
                 Tareas = p.Tareas
                     .Where(t => t.Asignados.Any(a => a.UsuarioId == usuarioId))
                     .Select(t => new TareaDetalleDto
@@ -433,6 +454,33 @@ public class TareaService
                             st.Tarea.Proyecto.EmpresaId == empresaId);
     }
 
+public async Task<bool> AsignarClienteATareaAsync(AsignarClienteTareaDto dto, int empresaId)
+{
+    var tarea = await _context.Tareas
+        .Include(t => t.Proyecto)
+        .FirstOrDefaultAsync(t => t.Id == dto.TareaId && t.Proyecto.EmpresaId == empresaId);
+
+    if (tarea == null)
+        return false;
+
+    if (dto.ClienteId.HasValue)
+    {
+        var cliente = await _context.Clientes
+            .FirstOrDefaultAsync(c => c.Id == dto.ClienteId.Value && c.EmpresaId == empresaId);
+
+        if (cliente == null)
+            return false;
+
+        tarea.ClienteId = cliente.Id;
+    }
+    else
+    {
+        tarea.ClienteId = null; // Desasignar cliente
+    }
+
+    await _context.SaveChangesAsync();
+    return true;
+}
 
 public async Task<SubTarea?> CrearSubtareaAsync(int tareaId, CreateSubtareaDto dto, int empresaId)
 {

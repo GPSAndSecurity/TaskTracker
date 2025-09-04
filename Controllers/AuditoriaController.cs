@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskTracker.Models;
@@ -5,7 +6,6 @@ using TaskTracker.Services;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "admin_empresa,superadmin")]
 public class AuditoriaController : ControllerBase
 {
     private readonly AuditoriaService _auditoriaService;
@@ -27,12 +27,33 @@ public class AuditoriaController : ControllerBase
         return Ok(logs);
     }
 
-[HttpGet("notificaciones")]
+    [HttpGet("notificaciones")]
+[Authorize(Roles = "admin_empresa,superadmin,colaborador")]
 public async Task<IActionResult> ObtenerNotificaciones()
 {
-    var empresaId = ObtenerEmpresaIdDesdeToken();
-    var notificaciones = await _auditoriaService.ObtenerNotificacionesPorEmpresaAsync(empresaId);
-    return Ok(notificaciones);
+    var usuarioId = ObtenerUsuarioIdDesdeToken();
+    var roles = User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList();
+
+    if (roles.Contains("colaborador"))
+    {
+        var notificaciones = await _auditoriaService.ObtenerNotificacionesParaColaboradorAsync(usuarioId);
+        return Ok(notificaciones);
+    }
+    else
+    {
+        var empresaId = ObtenerEmpresaIdDesdeToken();
+        var notificaciones = await _auditoriaService.ObtenerNotificacionesPorEmpresaAsync(empresaId);
+        return Ok(notificaciones);
+    }
+}
+
+private int ObtenerUsuarioIdDesdeToken()
+{
+    var claim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+    if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out int usuarioId))
+        throw new UnauthorizedAccessException("userId inválido en el token");
+
+    return usuarioId;
 }
 
 

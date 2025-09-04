@@ -6,8 +6,6 @@ public class SubTarea
 
     public int Id { get; set; }
 
-
-
     public int TareaId { get; set; }
 
     public Tarea Tarea { get; set; } = null!;

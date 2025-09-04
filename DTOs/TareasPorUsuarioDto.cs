@@ -1,8 +1,8 @@
 public class TareasPorUsuarioDto
 {
     public int UsuarioId { get; set; }
-    public string UsuarioNombre { get; set; }
-    public string UsuarioApellido { get; set; }
+    public string? UsuarioNombre { get; set; }
+    public string? UsuarioApellido { get; set; }
     public int? EmpresaId { get; set; }  
 
     public int EnProceso { get; set; }

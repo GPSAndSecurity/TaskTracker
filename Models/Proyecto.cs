@@ -14,4 +14,7 @@ public class Proyecto
     public bool Archivado { get; set; } = false;    // ✅ Nuevo campo
     public List<ProyectoColaborador> Colaboradores { get; set; } = new();
     public List<Tarea> Tareas { get; set; } = new();
+
+
+
 }
