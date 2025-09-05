@@ -7,6 +7,9 @@ namespace TaskTracker.Models
         public int? UsuarioId { get; set; }
         public Usuario? Usuario { get; set; }
 
+        public int? UsuarioGeneradorId { get; set; }  // 👈 Nuevo campo
+        public Usuario? UsuarioGenerador { get; set; } // 👈 Relación opcional
+
         public string Accion { get; set; } = string.Empty;
         public string Entidad { get; set; } = string.Empty;
         public int? EntidadId { get; set; }

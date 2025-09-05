@@ -3,25 +3,6 @@ using TaskTracker.Data;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 
-public class AuditoriaFilterDto
-{
-    public DateTime? FechaInicio { get; set; }
-    public DateTime? FechaFin { get; set; }
-    public string? Accion { get; set; }
-    public int? UsuarioId { get; set; }
-}
-
-public class NotificacionDto
-{
-    public int Id { get; set; }
-    public string? Accion { get; set; }
-    public string? Entidad { get; set; }
-    public int? EntidadId { get; set; }
-    public string? Descripcion { get; set; }
-    public DateTime Fecha { get; set; }
-    public bool Visto { get; set; } // <-- agrega esta propiedad si es útil
-
-    }
 
 
 namespace TaskTracker.Services
@@ -37,117 +18,155 @@ namespace TaskTracker.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task RegistrarEventoAsync(string accion, string entidad, int? entidadId, string? descripcion, bool generaNotificacion = false)
-{
-    var usuarioId = ObtenerUsuarioIdDesdeToken();
-
-    var log = new Auditoria
-    {
-        UsuarioId = usuarioId,
-        Accion = accion,
-        Entidad = entidad,
-        EntidadId = entidadId,
-        Descripcion = descripcion,
-        Fecha = DateTime.UtcNow,
-        GeneraNotificacion = generaNotificacion,
-        Visto = false
-    };
-
-    _context.Auditorias.Add(log);
-    await _context.SaveChangesAsync();
-}
-
-
         private int? ObtenerUsuarioIdDesdeToken()
         {
             var user = _httpContextAccessor.HttpContext?.User;
             if (user == null) return null;
 
             var claim = user.FindFirst(ClaimTypes.NameIdentifier);
-            if (claim == null) return null;
-
-            return int.TryParse(claim.Value, out int userId) ? userId : null;
+            return int.TryParse(claim?.Value, out var userId) ? userId : null;
         }
 
-        public async Task<List<Auditoria>> ObtenerLogsAsync(DateTime? fechaInicio, DateTime? fechaFin, string? accion, int? usuarioId)
+        public async Task RegistrarEventoAsync(string accion, string entidad, int? entidadId, string? descripcion, bool generaNotificacion = false)
         {
-            var query = _context.Auditorias.AsQueryable();
+            var usuarioId = ObtenerUsuarioIdDesdeToken();
 
-            if (fechaInicio.HasValue)
-                query = query.Where(a => a.Fecha >= fechaInicio.Value);
+            var log = new Auditoria
+            {
+                UsuarioId = usuarioId,
+                UsuarioGeneradorId = usuarioId, // 👈 también aquí
+                Accion = accion,
+                Entidad = entidad,
+                EntidadId = entidadId,
+                Descripcion = descripcion,
+                Fecha = DateTime.UtcNow,
+                GeneraNotificacion = generaNotificacion,
+                Visto = false
+            };
 
-            if (fechaFin.HasValue)
-                query = query.Where(a => a.Fecha <= fechaFin.Value);
-
-            if (!string.IsNullOrEmpty(accion))
-                query = query.Where(a => a.Accion.Contains(accion));
-
-            if (usuarioId.HasValue)
-                query = query.Where(a => a.UsuarioId == usuarioId.Value);
-
-            return await query
-                .Include(a => a.Usuario) // Para traer datos del usuario que hizo la acción
-                .OrderByDescending(a => a.Fecha)
-                .ToListAsync();
+            _context.Auditorias.Add(log);
+            await _context.SaveChangesAsync();
         }
 
-        public async Task<List<NotificacionDto>> ObtenerNotificacionesPorEmpresaAsync(int empresaId)
+      public async Task<List<Auditoria>> ObtenerEventosAuditoriaAsync(EventoAuditoriaFilterDto filtros)
 {
-    var usuarioIdActual = ObtenerUsuarioIdDesdeToken();
+    var usuarioActualId = ObtenerUsuarioIdDesdeToken();
 
-    var notificaciones = await _context.Auditorias
-        .Where(a => a.GeneraNotificacion &&
-                    !a.Visto &&
-                    a.Usuario != null &&
-                    a.Usuario.EmpresaId == empresaId &&
-                    a.UsuarioId != usuarioIdActual)  // <-- Aquí filtro las propias
-        .OrderByDescending(a => a.Fecha)
-        .Select(a => new NotificacionDto
+    var query = _context.Auditorias
+        .Include(a => a.Usuario)
+        .AsQueryable();
+
+    // Aplica filtros básicos
+    if (filtros.FechaInicio.HasValue)
+        query = query.Where(a => a.Fecha >= filtros.FechaInicio.Value);
+
+    if (filtros.FechaFin.HasValue)
+        query = query.Where(a => a.Fecha <= filtros.FechaFin.Value);
+
+    if (!string.IsNullOrEmpty(filtros.Accion))
+        query = query.Where(a => a.Accion.Contains(filtros.Accion));
+
+    if (filtros.SoloNotificaciones == true)
+        query = query.Where(a => a.GeneraNotificacion == true);
+
+    if (filtros.SoloHistorial == true)
+        query = query.Where(a => a.GeneraNotificacion == false);
+
+    if (filtros.NoVistas == true)
+        query = query.Where(a => a.Visto == false);
+
+    // Aquí filtras según el usuario y su rol
+    if (usuarioActualId.HasValue)
+    {
+        var usuario = await _context.Usuarios.FindAsync(usuarioActualId.Value);
+
+        bool esAdmin = usuario != null && (usuario.Rol == "admin_empresa" || usuario.Rol == "superadmin");
+
+        if (esAdmin)
         {
-            Id = a.Id,
-            Accion = a.Accion,
-            Entidad = a.Entidad,
-            EntidadId = a.EntidadId,
-            Descripcion = a.Descripcion,
-            Fecha = a.Fecha,
-            Visto = a.Visto
+            // Admin: mostrar todas excepto las propias
+            query = query.Where(a =>
+                a.UsuarioId == usuarioActualId.Value &&
+                a.UsuarioGeneradorId != usuarioActualId.Value);        }
+        else
+        {
+            // Usuario normal: solo sus propias notificaciones
+            query = query.Where(a => a.UsuarioId == usuarioActualId.Value);
+        }
+    }
+    else if (filtros.UsuarioId.HasValue)
+    {
+        // Si se especifica un usuario explícitamente en filtros
+        query = query.Where(a => a.UsuarioId == filtros.UsuarioId.Value);
+    }
 
-        })
-        .ToListAsync();
-
-    return notificaciones;
+    return await query.OrderByDescending(a => a.Fecha).ToListAsync();
 }
 
-
-public async Task<List<NotificacionDto>> ObtenerNotificacionesParaColaboradorAsync(int usuarioId)
-{
-    return await _context.Auditorias
-        .Where(a => a.UsuarioId == usuarioId) // Solo filtro por usuario para probar
-        .OrderByDescending(a => a.Fecha)
-        .Select(a => new NotificacionDto
-        {
-            Id = a.Id,
-            Accion = a.Accion,
-            Entidad = a.Entidad,
-            EntidadId = a.EntidadId,
-            Descripcion = a.Descripcion,
-            Fecha = a.Fecha,
-            Visto = a.Visto
-        })
-        .ToListAsync();
-}
         public async Task<Auditoria?> MarcarComoVistaAsync(int id)
         {
-            var notificacion = await _context.Auditorias.FirstOrDefaultAsync(a => a.Id == id && a.GeneraNotificacion);
-
+            var notificacion = await _context.Auditorias.FirstOrDefaultAsync(a => a.Id == id);
             if (notificacion == null)
                 return null;
 
             notificacion.Visto = true;
             await _context.SaveChangesAsync();
-
             return notificacion;
         }
 
+        public async Task NotificarUsuariosRelacionadosConTareaAsync(
+            int tareaId,
+            int usuarioQueRealizoLaAccion,
+            string accion,
+            string descripcion,
+            string entidad,
+            int entidadId)
+        {
+            var ahora = DateTime.UtcNow;
+
+            var empresaId = await _context.Usuarios
+                .Where(u => u.Id == usuarioQueRealizoLaAccion)
+                .Select(u => u.EmpresaId)
+                .FirstOrDefaultAsync();
+
+            var colaboradores = await _context.TareaAsignados
+                .Where(a => a.TareaId == tareaId && a.UsuarioId != usuarioQueRealizoLaAccion)
+                .Select(a => a.UsuarioId)
+                .ToListAsync();
+
+            var administradores = await _context.Usuarios
+                .Where(u =>
+                    u.Id != usuarioQueRealizoLaAccion &&
+                    (u.Rol == "admin_empresa" || u.Rol == "superadmin") &&
+                    (empresaId == null || u.EmpresaId == empresaId))
+                .Select(u => u.Id)
+                .ToListAsync();
+
+            var destinatarios = colaboradores
+                .Concat(administradores)
+                .Distinct()
+                .Where(id => id != usuarioQueRealizoLaAccion)
+                .ToHashSet();
+
+            foreach (var userId in destinatarios)
+            {
+                var notificacion = new Auditoria
+                {
+                    UsuarioId = userId,
+                     UsuarioGeneradorId = usuarioQueRealizoLaAccion, // 👈 importante
+                    Accion = accion,
+                    Descripcion = descripcion,
+                    Entidad = entidad,
+                    EntidadId = entidadId,
+                    Fecha = ahora,
+                    Visto = false,
+                    GeneraNotificacion = true
+                };
+
+                _context.Auditorias.Add(notificacion);
+            }
+
+            await _context.SaveChangesAsync();
+        }
     }
 }

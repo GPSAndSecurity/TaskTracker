@@ -119,75 +119,101 @@ public async Task<IActionResult> AsignarCliente(int tareaId, [FromBody] AsignarC
 }
 
 
-        [HttpPost("{tareaId}/comentarios")]
-        public async Task<IActionResult> AgregarComentario(int tareaId, [FromBody] ComentarioDto comentarioDto)
+[HttpPost("{tareaId}/comentarios")]
+public async Task<IActionResult> AgregarComentario(int tareaId, [FromBody] ComentarioDto comentarioDto)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    var usuarioId = GetUsuarioIdFromToken();
+    if (empresaId == null || usuarioId == null) return Unauthorized();
+
+    var resultado = await _tareaService.AgregarComentarioAsync(
+        tareaId, usuarioId.Value, comentarioDto.ComentarioTexto, empresaId.Value
+    );
+
+    if (resultado is null)
+        return BadRequest("No se pudo agregar el comentario.");
+
+    var (comentario, usuarioNombre) = resultado.Value;
+
+    var descripcion = $"Usuario '{usuarioNombre}' agregó un comentario a la tarea ID {tareaId}";
+
+    // 📝 Registrar el evento en la auditoría solo para historial (sin notificación)
+    await _auditoriaService.RegistrarEventoAsync(
+        accion: "Agregar Comentario",
+        entidad: "Tarea",
+        entidadId: tareaId,
+        descripcion: descripcion,
+        generaNotificacion: false // No notificar al autor
+    );
+
+    // 🔔 Notificar a los demás usuarios (colaboradores + admin_empresa + superadmin), excepto el autor
+    await _auditoriaService.NotificarUsuariosRelacionadosConTareaAsync(
+        tareaId,
+        usuarioId.Value,
+        "Comentario en tarea",
+        descripcion,
+        "Tarea",
+        tareaId
+    );
+
+    return Ok(new
+    {
+        comentario.Id,
+        comentario.TareaId,
+        comentario.ComentarioTexto,
+        comentario.FechaComentario,
+        UsuarioNombre = usuarioNombre
+    });
+}
+
+ [HttpPatch("{tareaId}/estado")]
+public async Task<IActionResult> CambiarEstadoTarea(int tareaId, [FromBody] EstadoTarea nuevoEstado)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    var usuarioId = GetUsuarioIdFromToken();
+    if (empresaId == null || usuarioId == null) return Unauthorized();
+
+    var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
+    if (tarea == null) return NotFound("Tarea no encontrada.");
+
+    var estadoAnterior = tarea.Estado;
+
+    if (nuevoEstado == EstadoTarea.Finalizada)
+    {
+        var subtareas = await _tareaService.ObtenerSubTareasPorTareaAsync(tareaId, empresaId.Value);
+        if (subtareas.Any(st => !st.Completada))
         {
-            var empresaId = GetEmpresaIdFromToken();
-            var usuarioId = GetUsuarioIdFromToken();
-            if (empresaId == null || usuarioId == null) return Unauthorized();
-
-            var resultado = await _tareaService.AgregarComentarioAsync(
-                tareaId, usuarioId.Value, comentarioDto.ComentarioTexto, empresaId.Value
-            );
-
-            if (resultado is null)
-                return BadRequest("No se pudo agregar el comentario.");
-
-            var (comentario, usuarioNombre) = resultado.Value;
-
-            await _auditoriaService.RegistrarEventoAsync(
-                accion: "Agregar Comentario",
-                entidad: "Tarea",
-                entidadId: tareaId,
-                descripcion: $"Usuario '{usuarioNombre}' agregó un comentario a la tarea ID {tareaId}",
-                 generaNotificacion: true
-            );
-
-            return Ok(new
-            {
-                comentario.Id,
-                comentario.TareaId,
-                comentario.ComentarioTexto,
-                comentario.FechaComentario,
-                UsuarioNombre = usuarioNombre
-            });
+            return BadRequest("No se puede finalizar la tarea porque tiene subtareas pendientes.");
         }
-        [HttpPatch("{tareaId}/estado")]
-        public async Task<IActionResult> CambiarEstadoTarea(int tareaId, [FromBody] EstadoTarea nuevoEstado)
-        {
-            var empresaId = GetEmpresaIdFromToken();
-            if (empresaId == null) return Unauthorized();
+    }
 
-            var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
-            if (tarea == null) return NotFound("Tarea no encontrada.");
+    var exito = await _tareaService.CambiarEstadoTareaAsync(tareaId, nuevoEstado, empresaId.Value);
+    if (!exito) return BadRequest("No se pudo cambiar el estado.");
 
-            var estadoAnterior = tarea.Estado;
+    var descripcion = $"Se cambió el estado de la tarea '{tarea.Descripcion}' de '{estadoAnterior}' a '{nuevoEstado}'";
 
-            // ✅ Lógica para evitar marcar como finalizada si hay subtareas pendientes
-            if (nuevoEstado == EstadoTarea.Finalizada)
-            {
-                var subtareas = await _tareaService.ObtenerSubTareasPorTareaAsync(tareaId, empresaId.Value);
-                bool haySubtareasPendientes = subtareas.Any(st => !st.Completada);
+    // 📝 Registrar evento para historial sin notificar al autor
+    await _auditoriaService.RegistrarEventoAsync(
+        accion: "Cambiar Estado",
+        entidad: "Tarea",
+        entidadId: tareaId,
+        descripcion: descripcion,
+        generaNotificacion: false
+    );
 
-                if (haySubtareasPendientes)
-                {
-                    return BadRequest("No se puede finalizar la tarea porque tiene subtareas pendientes.");
-                }
-            }
+    // 🔔 Notificar a los demás (excepto el que cambió el estado)
+    await _auditoriaService.NotificarUsuariosRelacionadosConTareaAsync(
+        tareaId,
+        usuarioId.Value,
+        "Cambio de estado en tarea", // ✅ título corregido
+        descripcion,
+        "Tarea",
+        tareaId
+    );
 
-            var exito = await _tareaService.CambiarEstadoTareaAsync(tareaId, nuevoEstado, empresaId.Value);
-            if (!exito) return BadRequest("No se pudo cambiar el estado.");
+    return NoContent();
+}
 
-            await _auditoriaService.RegistrarEventoAsync(
-                accion: "Cambiar Estado",
-                entidad: "Tarea",
-                entidadId: tareaId,
-                descripcion: $"Se cambió el estado de la tarea '{tarea.Descripcion}' de '{estadoAnterior}' a '{nuevoEstado}'",
-                generaNotificacion: true
-            );
-
-            return NoContent();
-        }
 
         [HttpDelete("{tareaId}")]
         public async Task<IActionResult> EliminarTarea(int tareaId)

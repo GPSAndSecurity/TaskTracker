@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskTracker.Models;
 using TaskTracker.Services;
-
 [Route("api/[controller]")]
 [ApiController]
 public class AuditoriaController : ControllerBase
@@ -15,66 +14,38 @@ public class AuditoriaController : ControllerBase
         _auditoriaService = auditoriaService;
     }
 
-    [HttpGet("logs")]
-    public async Task<ActionResult<List<Auditoria>>> ObtenerLogs([FromQuery] AuditoriaFilterDto filtros)
+    [HttpGet("eventos")]
+    [Authorize(Roles = "admin_empresa,superadmin,colaborador")]
+    public async Task<IActionResult> ObtenerEventosAuditoria([FromQuery] EventoAuditoriaFilterDto filtros)
     {
-        var logs = await _auditoriaService.ObtenerLogsAsync(
-            filtros.FechaInicio,
-            filtros.FechaFin,
-            filtros.Accion,
-            filtros.UsuarioId);
+        var usuarioId = ObtenerUsuarioIdDesdeToken();
+        var roles = User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList();
 
-        return Ok(logs);
+        if (roles.Contains("colaborador"))
+        {
+            filtros.UsuarioId = usuarioId;
+        }
+
+        var eventos = await _auditoriaService.ObtenerEventosAuditoriaAsync(filtros);
+        return Ok(eventos);
     }
 
-    [HttpGet("notificaciones")]
-[Authorize(Roles = "admin_empresa,superadmin,colaborador")]
-public async Task<IActionResult> ObtenerNotificaciones()
-{
-    var usuarioId = ObtenerUsuarioIdDesdeToken();
-    var roles = User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList();
-
-    if (roles.Contains("colaborador"))
+    [HttpPatch("marcar-vista/{id}")]
+    public async Task<IActionResult> MarcarNotificacionComoVista(int id)
     {
-        var notificaciones = await _auditoriaService.ObtenerNotificacionesParaColaboradorAsync(usuarioId);
-        return Ok(notificaciones);
+        var auditoria = await _auditoriaService.MarcarComoVistaAsync(id);
+        if (auditoria == null)
+            return NotFound($"No se encontró la notificación con ID {id}");
+
+        return Ok();
     }
-    else
+
+    private int ObtenerUsuarioIdDesdeToken()
     {
-        var empresaId = ObtenerEmpresaIdDesdeToken();
-        var notificaciones = await _auditoriaService.ObtenerNotificacionesPorEmpresaAsync(empresaId);
-        return Ok(notificaciones);
+        var claim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out int usuarioId))
+            throw new UnauthorizedAccessException("userId inválido en el token");
+
+        return usuarioId;
     }
-}
-
-private int ObtenerUsuarioIdDesdeToken()
-{
-    var claim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-    if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out int usuarioId))
-        throw new UnauthorizedAccessException("userId inválido en el token");
-
-    return usuarioId;
-}
-
-
-private int ObtenerEmpresaIdDesdeToken()
-{
-    var claim = User.Claims.FirstOrDefault(c => c.Type == "empresaId")?.Value;
-    if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out int empresaId))
-        throw new UnauthorizedAccessException("empresaId inválido en el token");
-
-    return empresaId;
-}
-
-[HttpPatch("marcar-vista/{id}")]
-public async Task<IActionResult> MarcarNotificacionComoVista(int id)
-{
-    var auditoria = await _auditoriaService.MarcarComoVistaAsync(id);
-
-    if (auditoria == null)
-        return NotFound();
-
-    return Ok();
-}
-
 }
