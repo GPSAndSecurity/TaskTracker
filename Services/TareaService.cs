@@ -518,5 +518,32 @@ public async Task<List<Tarea>> ObtenerTodasLasTareasAsync(int empresaId)
         .Where(t => t.Proyecto.EmpresaId == empresaId)
         .ToListAsync();
 }
+ public async Task<List<TareasPorClienteDto>> ObtenerTareasAgrupadasPorClienteAsync(int empresaId)
+    {
+        var query = _context.TareaAsignados
+            .Include(ta => ta.Tarea)
+            .ThenInclude(t => t.Cliente)
+            .Include(ta => ta.Usuario)
+            .Where(ta => ta.Usuario.EmpresaId.HasValue && ta.Usuario.EmpresaId.Value == empresaId
+                && ta.Tarea.ClienteId.HasValue)
+            .AsQueryable();
 
+        var result = await query
+            .GroupBy(ta => new {
+                ClienteId = ta.Tarea.Cliente!.Id,
+                ClienteNombre = ta.Tarea.Cliente.Nombre
+            })
+            .Select(g => new TareasPorClienteDto
+            {
+                ClienteId = g.Key.ClienteId,
+                ClienteNombre = g.Key.ClienteNombre,
+                EnProceso = g.Count(ta => ta.Tarea.Estado == EstadoTarea.EnProceso),
+                Finalizadas = g.Count(ta => ta.Tarea.Estado == EstadoTarea.Finalizada),
+                Inconclusas = g.Count(ta => ta.Tarea.Estado == EstadoTarea.Inconclusa),
+                Total = g.Count()
+            })
+            .ToListAsync();
+
+        return result;
+    }
 }

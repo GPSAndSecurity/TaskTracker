@@ -14,11 +14,15 @@ public class DashboardController : ControllerBase
     private readonly AppDbContext _context;
     private readonly ProyectoService _proyectoService;
 
-    public DashboardController(AppDbContext context, ProyectoService proyectoService)
-    {
-        _context = context;
-        _proyectoService = proyectoService;
-    }
+private readonly TareaService _tareaService;
+
+    public DashboardController(AppDbContext context, ProyectoService proyectoService, TareaService tareaService)
+{
+    _context = context;
+    _proyectoService = proyectoService;
+    _tareaService = tareaService;
+}
+
 
     [HttpGet("total-colaboradores")]
     public async Task<ActionResult<int>> GetTotalColaboradores()
@@ -86,7 +90,16 @@ public class DashboardController : ControllerBase
         return empresaId;
     }
     
-    
+    [HttpGet("tareas-por-cliente")]
+public async Task<ActionResult<List<TareasPorClienteDto>>> GetTareasAgrupadasPorCliente()
+{
+    int empresaId = ObtenerEmpresaIdDesdeToken();
+
+    var result = await _tareaService.ObtenerTareasAgrupadasPorClienteAsync(empresaId);
+
+    return Ok(result);
+}
+
 
     [HttpGet("estadisticas-tareas-colaborador")]
 [Authorize(Roles = "colaborador")]

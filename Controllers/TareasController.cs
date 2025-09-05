@@ -292,7 +292,7 @@ public async Task<IActionResult> CambiarEstadoTarea(int tareaId, [FromBody] Esta
         }
 
 [HttpPut("{tareaId}/cliente")]
-[Authorize(Roles = "admin_empresa,superadmin")]
+[Authorize(Roles = "admin_empresa, colaboradores")]
 public async Task<IActionResult> AsignarClienteATarea(int tareaId, [FromBody] AsignarClienteTareaDto dto)
 {
     var empresaId = GetEmpresaIdFromToken();
