@@ -64,7 +64,11 @@ public async Task<IActionResult> ObtenerDetalleTarea(int tareaId)
     {
         tarea.Id,
         tarea.Descripcion,
-        tarea.Ubicacion,
+        Ubicacion = tarea.Ubicacion != null ? new
+            {
+                tarea.Ubicacion.Id,
+                tarea.Ubicacion.Nombre
+            } : null,
         tarea.Estado,
         tarea.FechaInicioEstimado,
         tarea.FechaFinEstimado,
@@ -359,7 +363,7 @@ public async Task<IActionResult> AsignarClienteATarea(int tareaId, [FromBody] As
             if (tarea == null) return NotFound("Tarea no encontrada.");
 
             tarea.Descripcion = dto.Descripcion;
-            tarea.Ubicacion = dto.Ubicacion;
+            tarea.UbicacionId = dto.UbicacionId;
             tarea.FechaInicioEstimado = dto.FechaInicioEstimado;
             tarea.FechaFinEstimado = dto.FechaFinEstimado;
             tarea.Prioridad = dto.Prioridad;

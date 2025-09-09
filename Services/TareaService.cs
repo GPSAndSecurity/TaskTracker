@@ -10,38 +10,50 @@ namespace TaskTracker.Services;
 
 public class TareaService
 {
-    private readonly AppDbContext _context;
+   private readonly AppDbContext _context;
+private readonly UbicacionService _ubicacionService;
 
-    public TareaService(AppDbContext context)
-    {
-        _context = context;
-    }
+public TareaService(AppDbContext context, UbicacionService ubicacionService)
+{
+    _context = context;
+    _ubicacionService = ubicacionService;
+}
 
     public async Task<Tarea?> CrearTareaAsync(CreateTareaDto dto, int empresaId)
+{
+    var proyecto = await _context.Proyectos
+        .FirstOrDefaultAsync(p => p.Id == dto.ProyectoId && p.EmpresaId == empresaId);
+
+    if (proyecto == null) return null;
+
+    // Validar ubicación si se proporciona
+    if (dto.UbicacionId.HasValue)
     {
-        var proyecto = await _context.Proyectos
-            .FirstOrDefaultAsync(p => p.Id == dto.ProyectoId && p.EmpresaId == empresaId);
+        var ubicacionValida = await _context.Ubicaciones
+            .AnyAsync(u => u.Id == dto.UbicacionId.Value && u.EmpresaId == empresaId);
 
-        if (proyecto == null) return null;
-
-        var tarea = new Tarea
-        {
-            ProyectoId = dto.ProyectoId,
-            Descripcion = dto.Descripcion,
-            Ubicacion = dto.Ubicacion,
-            FechaInicioEstimado = dto.FechaInicioEstimado,
-            FechaFinEstimado = dto.FechaFinEstimado,
-            Prioridad = dto.Prioridad,
-            AttachmentRequerido = dto.AttachmentRequerido,
-            UbicacionRequeridaAlCerrar = dto.UbicacionRequeridaAlCerrar,
-            Estado = EstadoTarea.Pendiente
-        };
-
-        _context.Tareas.Add(tarea);
-        await _context.SaveChangesAsync();
-
-        return tarea;
+        if (!ubicacionValida)
+            return null; // o lanza BadRequest si estás en controlador
     }
+
+    var tarea = new Tarea
+    {
+        ProyectoId = dto.ProyectoId,
+        Descripcion = dto.Descripcion,
+        UbicacionId = dto.UbicacionId, // ✅ Solo se asigna el ID
+        FechaInicioEstimado = dto.FechaInicioEstimado,
+        FechaFinEstimado = dto.FechaFinEstimado,
+        Prioridad = dto.Prioridad,
+        AttachmentRequerido = dto.AttachmentRequerido,
+        UbicacionRequeridaAlCerrar = dto.UbicacionRequeridaAlCerrar,
+        Estado = EstadoTarea.Pendiente
+    };
+
+    _context.Tareas.Add(tarea);
+    await _context.SaveChangesAsync();
+
+    return tarea;
+}
 
     public async Task<List<Tarea>> ObtenerTareasPorProyectoAsync(int proyectoId, int empresaId, bool? soloArchivadas = null)
     {
@@ -80,6 +92,7 @@ public class TareaService
         .Include(t => t.SubTareas)
         .Include(t => t.Proyecto)
         .Include(t => t.Cliente) // 👈 Esto es lo que te faltaba
+        .Include(t => t.Ubicacion) // ✅ para traer todo el objeto
         .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto!.EmpresaId == empresaId);
 
     return tarea;

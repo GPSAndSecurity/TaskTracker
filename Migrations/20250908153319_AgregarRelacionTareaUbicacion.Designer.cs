@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TaskTracker.Data;
 
@@ -11,9 +12,11 @@ using TaskTracker.Data;
 namespace TaskTracker.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250908153319_AgregarRelacionTareaUbicacion")]
+    partial class AgregarRelacionTareaUbicacion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -395,9 +398,6 @@ namespace TaskTracker.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("EmpresaId")
-                        .HasColumnType("int");
-
                     b.Property<double>("Latitud")
                         .HasColumnType("double");
 
@@ -409,8 +409,6 @@ namespace TaskTracker.Migrations
                         .HasColumnType("longtext");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("EmpresaId");
 
                     b.ToTable("Ubicaciones");
                 });
@@ -567,22 +565,9 @@ namespace TaskTracker.Migrations
                     b.Navigation("Empresa");
                 });
 
-            modelBuilder.Entity("Ubicacion", b =>
-                {
-                    b.HasOne("TaskTracker.Models.Empresa", "Empresa")
-                        .WithMany("Ubicaciones")
-                        .HasForeignKey("EmpresaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Empresa");
-                });
-
             modelBuilder.Entity("TaskTracker.Models.Empresa", b =>
                 {
                     b.Navigation("Clientes");
-
-                    b.Navigation("Ubicaciones");
 
                     b.Navigation("Usuarios");
                 });

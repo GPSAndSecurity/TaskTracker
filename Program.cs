@@ -64,7 +64,7 @@ builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<ProyectoService>();
 builder.Services.AddScoped<TareaService>();
 builder.Services.AddScoped<AuditoriaService>();
-
+builder.Services.AddScoped<UbicacionService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();

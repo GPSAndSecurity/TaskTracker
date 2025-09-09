@@ -9,5 +9,7 @@ public class Empresa
     // Relaciones con otras tablas 
     public List<Usuario> Usuarios { get; set; } = new();
     public List<Cliente> Clientes { get; set; } = new();
+    public ICollection<Ubicacion> Ubicaciones { get; set; } = new List<Ubicacion>();
+
 
 }

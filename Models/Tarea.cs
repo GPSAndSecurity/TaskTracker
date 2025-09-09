@@ -8,7 +8,8 @@ public class Tarea
     public Proyecto? Proyecto { get; set; }
 
     public string Descripcion { get; set; } = string.Empty;
-    public string? Ubicacion { get; set; }
+    public int? UbicacionId { get; set; }
+    public Ubicacion? Ubicacion { get; set; } // relación opcional
 
     public DateTime? FechaInicioEstimado { get; set; }
     public DateTime? FechaFinEstimado { get; set; }

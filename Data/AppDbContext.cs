@@ -24,6 +24,7 @@ public class AppDbContext : DbContext
     public DbSet<SubTarea> SubTareas { get; set; }
 
     public DbSet<Auditoria> Auditorias { get; set; }
+public DbSet<Ubicacion> Ubicaciones { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -110,6 +111,15 @@ public class AppDbContext : DbContext
             .WithMany(t => t.SubTareas)
             .HasForeignKey(st => st.TareaId)
             .OnDelete(DeleteBehavior.Cascade);
+
+          
+
+modelBuilder.Entity<Tarea>()
+    .HasOne(t => t.Ubicacion)
+    .WithMany() // o .WithMany(u => u.Tareas) si quieres la relación inversa
+    .HasForeignKey(t => t.UbicacionId)
+    .OnDelete(DeleteBehavior.SetNull);
+
 
 modelBuilder.Entity<Auditoria>()
     .HasOne(a => a.Usuario)
