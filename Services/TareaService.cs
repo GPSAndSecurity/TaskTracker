@@ -56,30 +56,35 @@ public TareaService(AppDbContext context, UbicacionService ubicacionService)
 }
 
     public async Task<List<Tarea>> ObtenerTareasPorProyectoAsync(int proyectoId, int empresaId, bool? soloArchivadas = null)
+{
+    var proyectoValido = await _context.Proyectos
+        .AnyAsync(p => p.Id == proyectoId && p.EmpresaId == empresaId);
+    if (!proyectoValido)
+        return new List<Tarea>();
+
+    var query = _context.Tareas
+        .Where(t => t.ProyectoId == proyectoId);
+
+    if (soloArchivadas.HasValue)
     {
-        var proyectoValido = await _context.Proyectos
-            .AnyAsync(p => p.Id == proyectoId && p.EmpresaId == empresaId);
-        if (!proyectoValido)
-            return new List<Tarea>();
-
-        var query = _context.Tareas
-            .Where(t => t.ProyectoId == proyectoId);
-
-        if (soloArchivadas.HasValue)
-        {
-            if (soloArchivadas.Value)
-                query = query.Where(t => t.Estado == EstadoTarea.Archivada);
-            else
-                query = query.Where(t => t.Estado != EstadoTarea.Archivada);
-        }
-
-        return await query
-            .Include(t => t.Comentarios)
-                .ThenInclude(c => c.Usuario)
-            .Include(t => t.Asignados)
-                .ThenInclude(a => a.Usuario)
-            .ToListAsync();
+        if (soloArchivadas.Value)
+            query = query.Where(t => t.Estado == EstadoTarea.Archivada);
+        else
+            query = query.Where(t => t.Estado != EstadoTarea.Archivada);
     }
+
+    // Aquí encadenamos todos los Include
+    var tareas = await query
+        .Include(t => t.Ubicacion)
+        .Include(t => t.Comentarios)
+            .ThenInclude(c => c.Usuario)
+        .Include(t => t.Asignados)
+            .ThenInclude(a => a.Usuario)
+        .ToListAsync();
+
+    return tareas;
+}
+
 
    public async Task<Tarea?> ObtenerTareaDetalleAsync(int tareaId, int empresaId)
 {

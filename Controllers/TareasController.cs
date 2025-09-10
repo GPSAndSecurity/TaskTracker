@@ -72,6 +72,7 @@ public async Task<IActionResult> ObtenerDetalleTarea(int tareaId)
         tarea.Estado,
         tarea.FechaInicioEstimado,
         tarea.FechaFinEstimado,
+        tarea.Prioridad,  // <-- Agregar esta línea
         Comentarios = comentariosConNombre,
         Asignados = colaboradores,
         SubTareas = tarea.SubTareas.Select(st => new SubTareaDto
