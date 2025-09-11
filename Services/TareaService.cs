@@ -40,7 +40,7 @@ public TareaService(AppDbContext context, UbicacionService ubicacionService)
     {
         ProyectoId = dto.ProyectoId,
         Descripcion = dto.Descripcion,
-        UbicacionId = dto.UbicacionId, // ✅ Solo se asigna el ID
+        UbicacionId = dto.UbicacionId, 
         FechaInicioEstimado = dto.FechaInicioEstimado,
         FechaFinEstimado = dto.FechaFinEstimado,
         Prioridad = dto.Prioridad,
@@ -85,7 +85,6 @@ public TareaService(AppDbContext context, UbicacionService ubicacionService)
     return tareas;
 }
 
-
    public async Task<Tarea?> ObtenerTareaDetalleAsync(int tareaId, int empresaId)
 {
     var tarea = await _context.Tareas
@@ -96,8 +95,9 @@ public TareaService(AppDbContext context, UbicacionService ubicacionService)
         .Include(t => t.Adjuntos)
         .Include(t => t.SubTareas)
         .Include(t => t.Proyecto)
-        .Include(t => t.Cliente) // 👈 Esto es lo que te faltaba
-        .Include(t => t.Ubicacion) // ✅ para traer todo el objeto
+        .Include(t => t.Cliente)
+        .Include(t => t.Ubicacion)
+
         .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto!.EmpresaId == empresaId);
 
     return tarea;

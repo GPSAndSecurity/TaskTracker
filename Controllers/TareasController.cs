@@ -72,7 +72,7 @@ public async Task<IActionResult> ObtenerDetalleTarea(int tareaId)
         tarea.Estado,
         tarea.FechaInicioEstimado,
         tarea.FechaFinEstimado,
-        tarea.Prioridad,  // <-- Agregar esta línea
+        tarea.Prioridad,  
         Comentarios = comentariosConNombre,
         Asignados = colaboradores,
         SubTareas = tarea.SubTareas.Select(st => new SubTareaDto
@@ -85,19 +85,19 @@ public async Task<IActionResult> ObtenerDetalleTarea(int tareaId)
         {
             tarea.Cliente.Id,
             tarea.Cliente.Nombre,
-            tarea.Cliente.Correo, // u otros campos si quieres mostrar más
+            tarea.Cliente.Encargado,
+            tarea.Cliente.Correo, 
             tarea.Cliente.Telefono
         } : null,
 
-        ProyectoId = tarea.ProyectoId  // <--- Agrega esto si no está
-
+        ProyectoId = tarea.ProyectoId  
     };
 
     return Ok(tareaDto);
 }
 
 [HttpPost("{tareaId}/asignar-cliente")]
-[Authorize(Roles = "admin_empresa,superadmin")]
+[Authorize(Roles = "admin_empresa,superadmin, colaborador")]
 public async Task<IActionResult> AsignarCliente(int tareaId, [FromBody] AsignarClienteTareaDto dto)
 {
     var empresaId = GetEmpresaIdFromToken();
@@ -243,7 +243,7 @@ public async Task<IActionResult> CambiarEstadoTarea(int tareaId, [FromBody] Esta
         }
 
         [HttpPost("{tareaId}/asignar")]
-        [Authorize(Roles = "admin_empresa,superadmin")]
+        [Authorize(Roles = "admin_empresa,superadmin, colaborador")]
         public async Task<IActionResult> AsignarColaboradores(int tareaId, [FromBody] AsignarUsuariosTareaDto dto)
         {
             var empresaId = GetEmpresaIdFromToken();
@@ -297,7 +297,7 @@ public async Task<IActionResult> CambiarEstadoTarea(int tareaId, [FromBody] Esta
         }
 
 [HttpPut("{tareaId}/cliente")]
-[Authorize(Roles = "admin_empresa, colaboradores")]
+[Authorize(Roles = "superadmin, admin_empresa, colaboradores")]
 public async Task<IActionResult> AsignarClienteATarea(int tareaId, [FromBody] AsignarClienteTareaDto dto)
 {
     var empresaId = GetEmpresaIdFromToken();
@@ -323,6 +323,8 @@ public async Task<IActionResult> AsignarClienteATarea(int tareaId, [FromBody] As
 }
 
         [HttpGet("{tareaId}/colaboradores")]
+        [Authorize(Roles = "admin_empresa,superadmin, colaborador")]
+
         public async Task<ActionResult<List<UsuarioDto>>> ObtenerColaboradoresPorTarea(int tareaId)
         {
             var empresaId = GetEmpresaIdFromToken();

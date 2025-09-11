@@ -120,6 +120,14 @@ C:\Users\Dell\Documents\CrudApi\TaskTracker\obj\Debug\net8.0\refint\TaskTracker.
 C:\Users\Dell\Documents\CrudApi\TaskTracker\obj\Debug\net8.0\TaskTracker.pdb
 C:\Users\Dell\Documents\CrudApi\TaskTracker\obj\Debug\net8.0\TaskTracker.genruntimeconfig.cache
 C:\Users\Dell\Documents\CrudApi\TaskTracker\obj\Debug\net8.0\ref\TaskTracker.dll
+C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.csproj.AssemblyReference.cache
+C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.AssemblyInfoInputs.cache
+C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.AssemblyInfo.cs
+C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.csproj.CoreCompileInputs.cache
+C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.MvcApplicationPartsAssemblyInfo.cs
+C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.sourcelink.json
 C:\Users\gps and security\TaskTracker\bin\Debug\net8.0\appsettings.Development.json
 C:\Users\gps and security\TaskTracker\bin\Debug\net8.0\appsettings.json
 C:\Users\gps and security\TaskTracker\bin\Debug\net8.0\TaskTracker.exe
@@ -220,14 +228,6 @@ C:\Users\gps and security\TaskTracker\bin\Debug\net8.0\ru\Microsoft.CodeAnalysis
 C:\Users\gps and security\TaskTracker\bin\Debug\net8.0\tr\Microsoft.CodeAnalysis.Workspaces.resources.dll
 C:\Users\gps and security\TaskTracker\bin\Debug\net8.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.resources.dll
 C:\Users\gps and security\TaskTracker\bin\Debug\net8.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.resources.dll
-C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.csproj.AssemblyReference.cache
-C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.AssemblyInfoInputs.cache
-C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.AssemblyInfo.cs
-C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.csproj.CoreCompileInputs.cache
-C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.MvcApplicationPartsAssemblyInfo.cs
-C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.MvcApplicationPartsAssemblyInfo.cache
-C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.sourcelink.json
 C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\staticwebassets.build.json
 C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\staticwebassets.development.json
 C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\staticwebassets\msbuild.TaskTracker.Microsoft.AspNetCore.StaticWebAssets.props

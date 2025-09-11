@@ -23,7 +23,7 @@ public ClientesController(ClienteService service, AuditoriaService auditoria)
 
     // GET: api/clientes
     [HttpGet]
-    [Authorize(Roles = "admin_empresa,superadmin")]
+    [Authorize(Roles = "admin_empresa,superadmin, colaborador")]
     public async Task<ActionResult<List<Cliente>>> GetClientes()
     {
         int empresaId = ObtenerEmpresaIdDesdeToken();
@@ -33,7 +33,7 @@ public ClientesController(ClienteService service, AuditoriaService auditoria)
 
     // GET: api/clientes/{id}
     [HttpGet("{id}")]
-    [Authorize(Roles = "admin_empresa,superadmin")]
+    [Authorize(Roles = "admin_empresa,superadmin , colaborador")]
     public async Task<ActionResult<Cliente>> GetClientePorId(int id)
     {
         var cliente = await _service.ObtenerClientePorIdAsync(id);
@@ -112,7 +112,7 @@ public async Task<IActionResult> EliminarCliente(int id)
 
     //  total de clientes por empresa
     [HttpGet("total")]
-    [Authorize(Roles = "admin_empresa,superadmin")]
+    [Authorize(Roles = "admin_empresa,superadmin , colaborador")]
     public async Task<ActionResult<int>> GetTotalClientes()
     {
         int empresaId = ObtenerEmpresaIdDesdeToken();
