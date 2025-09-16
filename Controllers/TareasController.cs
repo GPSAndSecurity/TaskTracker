@@ -13,11 +13,15 @@ namespace TaskTracker.Controllers
     {
         private readonly TareaService _tareaService;
         private readonly AuditoriaService _auditoriaService;
+        private readonly ClienteService _clienteService;
 
-        public TareasController(TareaService tareaService, AuditoriaService auditoriaService)
+        public TareasController(TareaService tareaService, AuditoriaService auditoriaService, ClienteService clienteService)
         {
             _tareaService = tareaService;
             _auditoriaService = auditoriaService;
+            _clienteService = clienteService;
+
+
         }
         //obtener todas las tareas
         [HttpGet]
@@ -40,6 +44,9 @@ namespace TaskTracker.Controllers
             var tareas = await _tareaService.ObtenerTareasPorProyectoAsync(proyectoId, empresaId.Value);
             return Ok(tareas);
         }
+
+
+        
         [HttpGet("{tareaId}")]
 public async Task<IActionResult> ObtenerDetalleTarea(int tareaId)
 {
@@ -97,7 +104,7 @@ public async Task<IActionResult> ObtenerDetalleTarea(int tareaId)
 }
 
 [HttpPost("{tareaId}/asignar-cliente")]
-[Authorize(Roles = "admin_empresa,superadmin, colaborador")]
+[Authorize(Roles = "admin_empresa,superadmin,colaborador")]
 public async Task<IActionResult> AsignarCliente(int tareaId, [FromBody] AsignarClienteTareaDto dto)
 {
     var empresaId = GetEmpresaIdFromToken();
@@ -105,12 +112,27 @@ public async Task<IActionResult> AsignarCliente(int tareaId, [FromBody] AsignarC
         return Unauthorized();
 
     var exito = await _tareaService.AsignarClienteATareaAsync(dto.TareaId, dto.ClienteId, empresaId.Value);
-    if (!exito) return BadRequest("No se pudo asignar el cliente. Verifica que el cliente exista y pertenezca a la empresa.");
+    if (!exito)
+        return BadRequest("No se pudo asignar el cliente. Verifica que el cliente exista y pertenezca a la empresa.");
+
+    // Obtener la tarea para la descripción
+    var tarea = await _tareaService.ObtenerTareaDetalleAsync(dto.TareaId, empresaId.Value);
+    var descripcionTarea = tarea?.Descripcion ?? "Descripción no disponible";
 
     string accion = dto.ClienteId.HasValue ? "Asignar Cliente" : "Desasignar Cliente";
-    string descripcion = dto.ClienteId.HasValue
-        ? $"Se asignó el cliente ID {dto.ClienteId} a la tarea ID {dto.TareaId}"
-        : $"Se desasignó el cliente de la tarea ID {dto.TareaId}";
+
+    string descripcion;
+    if (dto.ClienteId.HasValue)
+    {
+        // Obtener el cliente para mostrar el nombre
+        var cliente = tarea?.Cliente;
+        var nombreCliente = cliente?.Nombre ?? $"ID {dto.ClienteId}";
+        descripcion = $"Se asignó el cliente \"{nombreCliente}\" a la tarea \"{descripcionTarea}\"";
+    }
+    else
+    {
+        descripcion = $"Se desasignó el cliente de la tarea \"{descripcionTarea}\"";
+    }
 
     await _auditoriaService.RegistrarEventoAsync(
         accion: accion,
@@ -140,23 +162,26 @@ public async Task<IActionResult> AgregarComentario(int tareaId, [FromBody] Comen
 
     var (comentario, usuarioNombre) = resultado.Value;
 
-    var descripcion = $"Usuario '{usuarioNombre}' agregó un comentario a la tarea ID {tareaId}";
+    // Obtener la tarea para tener la descripción
+    var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
 
-    // 📝 Registrar el evento en la auditoría solo para historial (sin notificación)
+    var descripcionTarea = tarea?.Descripcion ?? "Descripción no disponible";
+
+    var descripcionEvento = $"Usuario '{usuarioNombre}' agregó un comentario a la tarea \"{descripcionTarea}\"";
+
     await _auditoriaService.RegistrarEventoAsync(
         accion: "Agregar Comentario",
         entidad: "Tarea",
         entidadId: tareaId,
-        descripcion: descripcion,
+        descripcion: descripcionEvento,
         generaNotificacion: false // No notificar al autor
     );
 
-    // 🔔 Notificar a los demás usuarios (colaboradores + admin_empresa + superadmin), excepto el autor
     await _auditoriaService.NotificarUsuariosRelacionadosConTareaAsync(
         tareaId,
         usuarioId.Value,
         "Comentario en tarea",
-        descripcion,
+        descripcionEvento,
         "Tarea",
         tareaId
     );
@@ -219,28 +244,43 @@ public async Task<IActionResult> CambiarEstadoTarea(int tareaId, [FromBody] Esta
     return NoContent();
 }
 
+[HttpDelete("{tareaId}")]
+public async Task<IActionResult> EliminarTarea(int tareaId)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null) return Unauthorized();
 
-        [HttpDelete("{tareaId}")]
-        public async Task<IActionResult> EliminarTarea(int tareaId)
-        {
-            var empresaId = GetEmpresaIdFromToken();
-            if (empresaId == null) return Unauthorized();
+    // Primero, obtener colaboradores asignados a esta tarea
+    var colaboradores = await _tareaService.ObtenerColaboradoresPorTareaAsync(tareaId, empresaId.Value);
 
-            // Primero, obtener colaboradores asignados a esta tarea
-            var colaboradores = await _tareaService.ObtenerColaboradoresPorTareaAsync(tareaId, empresaId.Value);
+    // Verificar si la tarea tiene colaboradores
+    if (colaboradores != null && colaboradores.Any())
+    {
+        return BadRequest("No se puede eliminar la tarea porque tiene colaboradores asignados.");
+    }
 
-            // Verificar si la tarea tiene colaboradores
-            if (colaboradores != null && colaboradores.Any())
-            {
-                return BadRequest("No se puede eliminar la tarea porque tiene colaboradores asignados.");
-            }
+    // Obtener la tarea para la descripción (antes de eliminar)
+    var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
+    var descripcionTarea = tarea?.Descripcion ?? "Descripción no disponible";
 
-            // Si no hay colaboradores, proceder a eliminar
-            var exito = await _tareaService.EliminarTareaAsync(tareaId, empresaId.Value);
-            if (!exito) return NotFound();
+    // Eliminar la tarea
+    var exito = await _tareaService.EliminarTareaAsync(tareaId, empresaId.Value);
+    if (!exito) return NotFound();
 
-            return NoContent();
-        }
+    // Registrar evento en auditoría
+    string descripcion = $"Se eliminó la tarea \"{descripcionTarea}\" (ID {tareaId})";
+
+    await _auditoriaService.RegistrarEventoAsync(
+        accion: "Eliminar Tarea",
+        entidad: "Tarea",
+        entidadId: tareaId,
+        descripcion: descripcion,
+        generaNotificacion: true
+    );
+
+    return NoContent();
+}
+
 
         [HttpPost("{tareaId}/asignar")]
         [Authorize(Roles = "admin_empresa,superadmin, colaborador")]
@@ -309,18 +349,33 @@ public async Task<IActionResult> AsignarClienteATarea(int tareaId, [FromBody] As
     var exito = await _tareaService.AsignarClienteATareaAsync(dto, empresaId.Value);
     if (!exito) return BadRequest("No se pudo asignar el cliente a la tarea.");
 
+    // Obtener la tarea con detalles (incluye descripción)
+    var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
+    if (tarea == null)
+        return NotFound("Tarea no encontrada.");
+
+    string clienteNombre = "Cliente desasignado";
+    if (dto.ClienteId.HasValue)
+    {
+        var cliente = await _clienteService.ObtenerClientePorIdAsync(dto.ClienteId.Value, empresaId.Value);
+        clienteNombre = cliente != null ? cliente.Nombre : $"Cliente ID {dto.ClienteId.Value}";
+    }
+
+    var descripcion = dto.ClienteId.HasValue
+        ? $"Se asignó el cliente \"{clienteNombre}\" a la tarea \"{tarea.Descripcion}\""
+        : $"Se desasignó el cliente de la tarea \"{tarea.Descripcion}\"";
+
     await _auditoriaService.RegistrarEventoAsync(
         accion: "Asignar Cliente",
         entidad: "Tarea",
         entidadId: tareaId,
-        descripcion: dto.ClienteId.HasValue
-            ? $"Se asignó el cliente ID {dto.ClienteId.Value} a la tarea ID {tareaId}"
-            : $"Se desasignó el cliente de la tarea ID {tareaId}",
+        descripcion: descripcion,
         generaNotificacion: true
     );
 
     return Ok("Cliente asignado correctamente.");
 }
+
 
         [HttpGet("{tareaId}/colaboradores")]
         [Authorize(Roles = "admin_empresa,superadmin, colaborador")]
@@ -486,44 +541,65 @@ public async Task<IActionResult> AsignarClienteATarea(int tareaId, [FromBody] As
             return Ok(lista);
         }
 
-        [HttpPut("{tareaId}/archivar")]
-        [Authorize(Roles = "superadmin,admin_empresa")]
-        public async Task<IActionResult> ArchivarTarea(int tareaId)
-        {
-            var resultado = await _tareaService.ArchivarTareaAsync(tareaId);
-            if (!resultado)
-                return BadRequest("Tarea no encontrada, ya archivada o no se puede archivar.");
+       [HttpPut("{tareaId}/archivar")]
+[Authorize(Roles = "superadmin,admin_empresa")]
+public async Task<IActionResult> ArchivarTarea(int tareaId)
+{
+    int empresaId = ObtenerEmpresaIdDesdeToken();
 
-            await _auditoriaService.RegistrarEventoAsync(
-                accion: "Archivar Tarea",
-                entidad: "Tarea",
-                entidadId: tareaId,
-                descripcion: $"Se archivó la tarea con ID {tareaId}",
-                 generaNotificacion: true
-            );
+    var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId);
+    if (tarea == null)
+        return BadRequest("Tarea no encontrada o no pertenece a la empresa.");
 
-            return Ok("Tarea archivada correctamente.");
-        }
+    var resultado = await _tareaService.ArchivarTareaAsync(tareaId);
+    if (!resultado)
+        return BadRequest("Tarea ya archivada o no se puede archivar.");
 
+    await _auditoriaService.RegistrarEventoAsync(
+        accion: "Archivar Tarea",
+        entidad: "Tarea",
+        entidadId: tareaId,
+        descripcion: $"Se archivó la tarea: '{tarea.Descripcion}'",
+        generaNotificacion: true
+    );
 
-        [HttpPut("{tareaId}/desarchivar")]
-        [Authorize(Roles = "superadmin,admin_empresa")]
-        public async Task<IActionResult> DesarchivarTarea(int tareaId)
-        {
-            var resultado = await _tareaService.DesarchivarTareaAsync(tareaId);
-            if (!resultado)
-                return BadRequest("No se pudo desarchivar la tarea.");
+    return Ok("Tarea archivada correctamente.");
+}
 
-            await _auditoriaService.RegistrarEventoAsync(
-                accion: "Desarchivar Tarea",
-                entidad: "Tarea",
-                entidadId: tareaId,
-                descripcion: $"Se desarchivó la tarea con ID {tareaId}",
-                 generaNotificacion: true
-            );
+[HttpPut("{tareaId}/desarchivar")]
+[Authorize(Roles = "superadmin,admin_empresa")]
+public async Task<IActionResult> DesarchivarTarea(int tareaId)
+{
+    int empresaId = ObtenerEmpresaIdDesdeToken();
 
-            return Ok("Tarea desarchivada correctamente.");
-        }
+    var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId);
+    if (tarea == null)
+        return BadRequest("Tarea no encontrada o no pertenece a la empresa.");
+
+    var resultado = await _tareaService.DesarchivarTareaAsync(tareaId);
+    if (!resultado)
+        return BadRequest("No se pudo desarchivar la tarea.");
+
+    await _auditoriaService.RegistrarEventoAsync(
+        accion: "Desarchivar Tarea",
+        entidad: "Tarea",
+        entidadId: tareaId,
+        descripcion: $"Se desarchivó la tarea: '{tarea.Descripcion}'",
+        generaNotificacion: true
+    );
+
+    return Ok("Tarea desarchivada correctamente.");
+}
+
+// Método para obtener empresaId del token (ya lo debes tener implementado)
+private int ObtenerEmpresaIdDesdeToken()
+{
+    var claim = User.Claims.FirstOrDefault(c => c.Type == "empresaId")?.Value;
+    if (string.IsNullOrEmpty(claim) || !int.TryParse(claim, out int empresaId))
+        throw new UnauthorizedAccessException("empresaId inválido en el token");
+
+    return empresaId;
+}
 
         [HttpGet("proyectos-con-tareas-asignadas")]
         [Authorize(Roles = "colaborador")]
@@ -634,10 +710,7 @@ public async Task<IActionResult> AsignarClienteATarea(int tareaId, [FromBody] As
         {
             public bool Completada { get; set; }
         }
-
-
         
     }
-    
-    
+      
 }

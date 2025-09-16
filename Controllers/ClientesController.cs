@@ -32,16 +32,17 @@ public ClientesController(ClienteService service, AuditoriaService auditoria)
     }
 
     // GET: api/clientes/{id}
-    [HttpGet("{id}")]
-    [Authorize(Roles = "admin_empresa,superadmin , colaborador")]
-    public async Task<ActionResult<Cliente>> GetClientePorId(int id)
-    {
-        var cliente = await _service.ObtenerClientePorIdAsync(id);
-        if (cliente == null || cliente.EmpresaId != ObtenerEmpresaIdDesdeToken())
-            return Forbid();
+[HttpGet("{id}")]
+[Authorize(Roles = "admin_empresa,superadmin , colaborador")]
+public async Task<ActionResult<Cliente>> GetClientePorId(int id)
+{
+    int empresaId = ObtenerEmpresaIdDesdeToken();
+    var cliente = await _service.ObtenerClientePorIdAsync(id, empresaId);
+    if (cliente == null)
+        return Forbid();
 
-        return Ok(cliente);
-    }
+    return Ok(cliente);
+}
 
     // POST: api/clientes
    [HttpPost]
@@ -64,15 +65,16 @@ public async Task<ActionResult<Cliente>> CrearCliente(CreateClienteDto dto)
 
 
     // PUT: api/clientes/{id}
-    [HttpPut("{id}")]
+   [HttpPut("{id}")]
 [Authorize(Roles = "admin_empresa,superadmin")]
 public async Task<IActionResult> ActualizarCliente(int id, UpdateClienteDto dto)
 {
-    var cliente = await _service.ObtenerClientePorIdAsync(id);
-    if (cliente == null || cliente.EmpresaId != ObtenerEmpresaIdDesdeToken())
+    int empresaId = ObtenerEmpresaIdDesdeToken();
+    var cliente = await _service.ObtenerClientePorIdAsync(id, empresaId);
+    if (cliente == null)
         return Forbid();
 
-    var actualizado = await _service.ActualizarClienteAsync(id, dto);
+    var actualizado = await _service.ActualizarClienteAsync(id, dto, empresaId);
     if (!actualizado) return NotFound();
 
     await _auditoria.RegistrarEventoAsync(
@@ -87,15 +89,16 @@ public async Task<IActionResult> ActualizarCliente(int id, UpdateClienteDto dto)
 
 
     // DELETE: api/clientes/{id}
-    [HttpDelete("{id}")]
+  [HttpDelete("{id}")]
 [Authorize(Roles = "admin_empresa,superadmin")]
 public async Task<IActionResult> EliminarCliente(int id)
 {
-    var cliente = await _service.ObtenerClientePorIdAsync(id);
-    if (cliente == null || cliente.EmpresaId != ObtenerEmpresaIdDesdeToken())
+    int empresaId = ObtenerEmpresaIdDesdeToken();
+    var cliente = await _service.ObtenerClientePorIdAsync(id, empresaId);
+    if (cliente == null)
         return Forbid();
 
-    var eliminado = await _service.EliminarClienteAsync(id);
+    var eliminado = await _service.EliminarClienteAsync(id, empresaId);
     if (!eliminado) return NotFound();
 
     await _auditoria.RegistrarEventoAsync(
@@ -103,7 +106,7 @@ public async Task<IActionResult> EliminarCliente(int id)
         entidad: "Cliente",
         entidadId: id,
         descripcion: $"Se eliminó el cliente '{cliente.Nombre}'",
-         generaNotificacion: true
+        generaNotificacion: true
     );
 
     return NoContent();
@@ -128,6 +131,5 @@ public async Task<IActionResult> EliminarCliente(int id)
 
         return empresaId;
     }
-
 
 }

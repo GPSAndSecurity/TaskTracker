@@ -39,35 +39,38 @@ namespace TaskTracker.Services
         }
 
         // Obtener cliente por id
-        public async Task<Cliente?> ObtenerClientePorIdAsync(int id)
-        {
-            return await _context.Clientes.FindAsync(id);
-        }
+        // Obtener cliente por id y empresa
+public async Task<Cliente?> ObtenerClientePorIdAsync(int id, int empresaId)
+{
+    return await _context.Clientes
+        .FirstOrDefaultAsync(c => c.Id == id && c.EmpresaId == empresaId);
+}
+
 
         // Actualizar cliente
-        public async Task<bool> ActualizarClienteAsync(int id, UpdateClienteDto dto)
-        {
-            var cliente = await ObtenerClientePorIdAsync(id);
-            if (cliente == null) return false;
+public async Task<bool> ActualizarClienteAsync(int id, UpdateClienteDto dto, int empresaId)
+{
+    var cliente = await ObtenerClientePorIdAsync(id, empresaId);
+    if (cliente == null) return false;
 
-            cliente.Nombre = dto.Nombre;
-            cliente.Correo = dto.Correo;
-            cliente.Telefono = dto.Telefono;
+    cliente.Nombre = dto.Nombre;
+    cliente.Correo = dto.Correo;
+    cliente.Telefono = dto.Telefono;
 
-            await _context.SaveChangesAsync();
-            return true;
-        }
+    await _context.SaveChangesAsync();
+    return true;
+}
 
-        // Eliminar cliente
-        public async Task<bool> EliminarClienteAsync(int id)
-        {
-            var cliente = await ObtenerClientePorIdAsync(id);
-            if (cliente == null) return false;
+// Eliminar cliente
+public async Task<bool> EliminarClienteAsync(int id, int empresaId)
+{
+    var cliente = await ObtenerClientePorIdAsync(id, empresaId);
+    if (cliente == null) return false;
 
-            _context.Clientes.Remove(cliente);
-            await _context.SaveChangesAsync();
-            return true;
-        }
+    _context.Clientes.Remove(cliente);
+    await _context.SaveChangesAsync();
+    return true;
+}
 
         // contar clientes por empresa
         public async Task<int> ContarClientesPorEmpresaAsync(int empresaId)

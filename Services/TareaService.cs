@@ -80,6 +80,8 @@ public TareaService(AppDbContext context, UbicacionService ubicacionService)
             .ThenInclude(c => c.Usuario)
         .Include(t => t.Asignados)
             .ThenInclude(a => a.Usuario)
+        .Include(t => t.SubTareas)  // <--- Agregado aquí
+        .Include(t => t.Adjuntos)  // <--- Aquí agregas los adjuntos
         .ToListAsync();
 
     return tareas;
