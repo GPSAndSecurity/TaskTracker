@@ -25,6 +25,8 @@ public class AppDbContext : DbContext
 
     public DbSet<Auditoria> Auditorias { get; set; }
 public DbSet<Ubicacion> Ubicaciones { get; set; }
+public DbSet<DatosTecnicos> DatosTecnicos { get; set; }
+public DbSet<TareaTipoTrabajo> TareaTipoTrabajos { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -97,12 +99,12 @@ public DbSet<Ubicacion> Ubicaciones { get; set; }
             .OnDelete(DeleteBehavior.Cascade);
 
 
-            modelBuilder.Entity<Tarea>()
-    .HasOne(t => t.Cliente)
-    .WithMany()
-    .HasForeignKey(t => t.ClienteId)
-    .OnDelete(DeleteBehavior.SetNull);
-    
+        modelBuilder.Entity<Tarea>()
+.HasOne(t => t.Cliente)
+.WithMany()
+.HasForeignKey(t => t.ClienteId)
+.OnDelete(DeleteBehavior.SetNull);
+
         modelBuilder.Entity<SubTarea>()
     .HasKey(st => st.Id);
 
@@ -112,20 +114,35 @@ public DbSet<Ubicacion> Ubicaciones { get; set; }
             .HasForeignKey(st => st.TareaId)
             .OnDelete(DeleteBehavior.Cascade);
 
-          
-
-modelBuilder.Entity<Tarea>()
-    .HasOne(t => t.Ubicacion)
-    .WithMany() // o .WithMany(u => u.Tareas) si quieres la relación inversa
-    .HasForeignKey(t => t.UbicacionId)
-    .OnDelete(DeleteBehavior.SetNull);
 
 
-modelBuilder.Entity<Auditoria>()
-    .HasOne(a => a.Usuario)
-    .WithMany()
-    .HasForeignKey(a => a.UsuarioId)
-    .OnDelete(DeleteBehavior.SetNull);
+        modelBuilder.Entity<Tarea>()
+            .HasOne(t => t.Ubicacion)
+            .WithMany() // o .WithMany(u => u.Tareas) si quieres la relación inversa
+            .HasForeignKey(t => t.UbicacionId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+
+        modelBuilder.Entity<Auditoria>()
+            .HasOne(a => a.Usuario)
+            .WithMany()
+            .HasForeignKey(a => a.UsuarioId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<TareaTipoTrabajo>()
+               .HasKey(x => new { x.DatosTecnicosId, x.TipoTrabajo });
+
+        modelBuilder.Entity<TareaTipoTrabajo>()
+            .HasOne(x => x.DatosTecnicos)
+            .WithMany(dt => dt.TiposTrabajo)
+            .HasForeignKey(x => x.DatosTecnicosId);
+        
+
+        modelBuilder.Entity<DatosTecnicos>()
+    .HasOne(dt => dt.Tarea)
+    .WithMany(t => t.DatosTecnicos)
+    .HasForeignKey(dt => dt.TareaId)
+    .OnDelete(DeleteBehavior.Cascade);
 
     }
 

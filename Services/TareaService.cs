@@ -10,14 +10,14 @@ namespace TaskTracker.Services;
 
 public class TareaService
 {
-   private readonly AppDbContext _context;
-private readonly UbicacionService _ubicacionService;
+    private readonly AppDbContext _context;
+    private readonly UbicacionService _ubicacionService;
 
-public TareaService(AppDbContext context, UbicacionService ubicacionService)
-{
-    _context = context;
-    _ubicacionService = ubicacionService;
-}
+    public TareaService(AppDbContext context, UbicacionService ubicacionService)
+    {
+        _context = context;
+        _ubicacionService = ubicacionService;
+    }
 
     public async Task<Tarea?> CrearTareaAsync(CreateTareaDto dto, int empresaId)
 {
@@ -33,104 +33,145 @@ public TareaService(AppDbContext context, UbicacionService ubicacionService)
             .AnyAsync(u => u.Id == dto.UbicacionId.Value && u.EmpresaId == empresaId);
 
         if (!ubicacionValida)
-            return null; // o lanza BadRequest si estás en controlador
+            return null;
     }
 
     var tarea = new Tarea
     {
         ProyectoId = dto.ProyectoId,
         Descripcion = dto.Descripcion,
-        UbicacionId = dto.UbicacionId, 
+        UbicacionId = dto.UbicacionId,
         FechaInicioEstimado = dto.FechaInicioEstimado,
         FechaFinEstimado = dto.FechaFinEstimado,
         Prioridad = dto.Prioridad,
         AttachmentRequerido = dto.AttachmentRequerido,
         UbicacionRequeridaAlCerrar = dto.UbicacionRequeridaAlCerrar,
-        Estado = EstadoTarea.Pendiente
+        Estado = EstadoTarea.Pendiente,
+        Presupuesto = dto.Presupuesto  // <-- Aquí lo agregas
+
     };
 
     _context.Tareas.Add(tarea);
-    await _context.SaveChangesAsync();
+    await _context.SaveChangesAsync(); // Guardar para obtener el ID de la tarea
+
+    // Guardar Datos Técnicos si existen en el DTO
+    if (dto.DatosTecnicos != null)
+    {
+        foreach (var dtDto in dto.DatosTecnicos)
+        {
+            var datosTecnicos = new DatosTecnicos
+            {
+                TareaId = tarea.Id,
+                VehiculoMarca = dtDto.VehiculoMarca,
+                VehiculoModelo = dtDto.VehiculoModelo,
+                VehiculoTipo = dtDto.VehiculoTipo,
+                VehiculoCodigo = dtDto.VehiculoCodigo,
+                VehiculoPlaca = dtDto.VehiculoPlaca,
+                VehiculoVin = dtDto.VehiculoVin,
+                GpsSerie = dtDto.GpsSerie,
+                GpsImei = dtDto.GpsImei,
+                SIMCompania = dtDto.SimCompania,
+                SIMCodigo = dtDto.SimCodigo,
+                InstalacionAccesorios = dtDto.InstalacionAccesorios,
+                TecnicoInstalador = dtDto.TecnicoInstalador,
+                FirmaCliente = dtDto.FirmaCliente,
+                TiposTrabajo = dtDto.TiposTrabajo?.Select(tipoStr => new TareaTipoTrabajo
+                {
+                    TipoTrabajo = Enum.Parse<TipoTrabajo>(tipoStr, true)
+                }).ToList() ?? new List<TareaTipoTrabajo>()
+            };
+
+            _context.DatosTecnicos.Add(datosTecnicos);
+        }
+
+        await _context.SaveChangesAsync(); // Guardar Datos Técnicos
+    }
 
     return tarea;
 }
+
+
 
     public async Task<List<Tarea>> ObtenerTareasPorProyectoAsync(int proyectoId, int empresaId, bool? soloArchivadas = null)
-{
-    var proyectoValido = await _context.Proyectos
-        .AnyAsync(p => p.Id == proyectoId && p.EmpresaId == empresaId);
-    if (!proyectoValido)
-        return new List<Tarea>();
-
-    var query = _context.Tareas
-        .Where(t => t.ProyectoId == proyectoId);
-
-    if (soloArchivadas.HasValue)
     {
-        if (soloArchivadas.Value)
-            query = query.Where(t => t.Estado == EstadoTarea.Archivada);
-        else
-            query = query.Where(t => t.Estado != EstadoTarea.Archivada);
+        var proyectoValido = await _context.Proyectos
+            .AnyAsync(p => p.Id == proyectoId && p.EmpresaId == empresaId);
+        if (!proyectoValido)
+            return new List<Tarea>();
+
+        var query = _context.Tareas
+            .Where(t => t.ProyectoId == proyectoId);
+
+        if (soloArchivadas.HasValue)
+        {
+            if (soloArchivadas.Value)
+                query = query.Where(t => t.Estado == EstadoTarea.Archivada);
+            else
+                query = query.Where(t => t.Estado != EstadoTarea.Archivada);
+        }
+
+        // Aquí encadenamos todos los Include
+        var tareas = await query
+            .Include(t => t.Ubicacion)
+            .Include(t => t.Comentarios)
+                .ThenInclude(c => c.Usuario)
+            .Include(t => t.Asignados)
+                .ThenInclude(a => a.Usuario)
+            .Include(t => t.SubTareas)  // <--- Agregado aquí
+            .Include(t => t.Adjuntos)  // <--- Aquí agregas los adjuntos
+            .ToListAsync();
+
+        return tareas;
     }
 
-    // Aquí encadenamos todos los Include
-    var tareas = await query
-        .Include(t => t.Ubicacion)
-        .Include(t => t.Comentarios)
-            .ThenInclude(c => c.Usuario)
-        .Include(t => t.Asignados)
-            .ThenInclude(a => a.Usuario)
-        .Include(t => t.SubTareas)  // <--- Agregado aquí
-        .Include(t => t.Adjuntos)  // <--- Aquí agregas los adjuntos
-        .ToListAsync();
-
-    return tareas;
-}
-
-   public async Task<Tarea?> ObtenerTareaDetalleAsync(int tareaId, int empresaId)
-{
-    var tarea = await _context.Tareas
-        .Include(t => t.Comentarios)
-            .ThenInclude(c => c.Usuario)
-        .Include(t => t.Asignados)
-            .ThenInclude(a => a.Usuario)
-        .Include(t => t.Adjuntos)
-        .Include(t => t.SubTareas)
-        .Include(t => t.Proyecto)
-        .Include(t => t.Cliente)
-        .Include(t => t.Ubicacion)
-
-        .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto!.EmpresaId == empresaId);
-
-    return tarea;
-}
-public async Task<bool> AsignarClienteATareaAsync(int tareaId, int? clienteId, int empresaId)
-{
-    var tarea = await _context.Tareas
-        .Include(t => t.Proyecto)
-        .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto.EmpresaId == empresaId);
-
-    if (tarea == null)
-        return false;
-
-    if (clienteId.HasValue)
+    public async Task<Tarea?> ObtenerTareaDetalleAsync(int tareaId, int empresaId)
     {
-        var cliente = await _context.Clientes
-            .FirstOrDefaultAsync(c => c.Id == clienteId.Value && c.EmpresaId == empresaId);
 
-        if (cliente == null)
+
+        var tarea = await _context.Tareas
+            .Include(t => t.Comentarios)
+                .ThenInclude(c => c.Usuario)
+            .Include(t => t.Asignados)
+                .ThenInclude(a => a.Usuario)
+            .Include(t => t.Adjuntos)
+            .Include(t => t.SubTareas)
+            .Include(t => t.Proyecto)
+            .Include(t => t.Cliente)
+            .Include(t => t.Ubicacion)
+            .Include(t => t.DatosTecnicos)
+                .ThenInclude(dt => dt.TiposTrabajo) // <--- Esto es lo que faltaba
+            .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto!.EmpresaId == empresaId);
+
+        return tarea;
+    }
+
+    public async Task<bool> AsignarClienteATareaAsync(int tareaId, int? clienteId, int empresaId)
+    {
+        var tarea = await _context.Tareas
+            .Include(t => t.Proyecto)
+            .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto.EmpresaId == empresaId);
+
+        if (tarea == null)
             return false;
 
-        tarea.ClienteId = clienteId.Value;
-    }
-    else
-    {
-        tarea.ClienteId = null; // desasignar
-    }
+        if (clienteId.HasValue)
+        {
+            var cliente = await _context.Clientes
+                .FirstOrDefaultAsync(c => c.Id == clienteId.Value && c.EmpresaId == empresaId);
 
-    await _context.SaveChangesAsync();
-    return true;
-}
+            if (cliente == null)
+                return false;
+
+            tarea.ClienteId = clienteId.Value;
+        }
+        else
+        {
+            tarea.ClienteId = null; // desasignar
+        }
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
 
     public async Task<bool> AsignarColaboradoresATareaAsync(int tareaId, List<int> usuarioIds, int empresaId)
     {
@@ -141,18 +182,18 @@ public async Task<bool> AsignarClienteATareaAsync(int tareaId, int? clienteId, i
         if (tarea == null || tarea.Proyecto == null || tarea.Proyecto.EmpresaId != empresaId)
             return false;
 
-        
+
         var usuarios = await _context.Usuarios
             .Where(u => usuarioIds.Contains(u.Id) && u.EmpresaId == empresaId)
             .ToListAsync();
 
-        
+
         var yaAsignados = await _context.TareaAsignados
             .Where(ta => ta.TareaId == tareaId && usuarioIds.Contains(ta.UsuarioId))
             .Select(ta => ta.UsuarioId)
             .ToListAsync();
 
-        
+
         var nuevosAsignados = usuarios
             .Where(u => !yaAsignados.Contains(u.Id))
             .Select(u => new TareaAsignado
@@ -161,7 +202,7 @@ public async Task<bool> AsignarClienteATareaAsync(int tareaId, int? clienteId, i
                 UsuarioId = u.Id
             });
 
-        
+
         _context.TareaAsignados.AddRange(nuevosAsignados);
         await _context.SaveChangesAsync();
 
@@ -199,13 +240,13 @@ public async Task<bool> AsignarClienteATareaAsync(int tareaId, int? clienteId, i
     public async Task<(TareaComentario comentario, string usuarioNombre)?> AgregarComentarioAsync(
        int tareaId, int usuarioId, string comentarioTexto, int empresaId)
     {
-        
+
         var usuario = await _context.Usuarios
             .FirstOrDefaultAsync(u => u.Id == usuarioId && u.EmpresaId == empresaId);
 
         if (usuario == null) return null;
 
-        
+
         var tarea = await _context.Tareas
             .FirstOrDefaultAsync(t => t.Id == tareaId);
 
@@ -232,7 +273,7 @@ public async Task<bool> AsignarClienteATareaAsync(int tareaId, int? clienteId, i
         var adjunto = new TareaAdjunto
         {
             TareaId = tareaId,
-            ArchivoUrl = archivoUrl, 
+            ArchivoUrl = archivoUrl,
             NombreArchivo = nombreArchivo,
             FechaSubida = DateTime.UtcNow
         };
@@ -258,7 +299,7 @@ public async Task<bool> AsignarClienteATareaAsync(int tareaId, int? clienteId, i
         if (tarea == null)
             return new List<UsuarioDto>();
 
-        
+
         var colaboradores = await _context.TareaAsignados
             .Where(ta => ta.TareaId == tareaId)
             .Include(ta => ta.Usuario)
@@ -290,7 +331,7 @@ public async Task<bool> AsignarClienteATareaAsync(int tareaId, int? clienteId, i
 
     public async Task<bool> EliminarColaboradorDeTareaAsync(int tareaId, int usuarioId, int empresaId)
     {
-        
+
         var tarea = await _context.Tareas
             .Include(t => t.Proyecto)
             .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto.EmpresaId == empresaId);
@@ -329,7 +370,7 @@ public async Task<bool> AsignarClienteATareaAsync(int tareaId, int? clienteId, i
         {
             var encoder = new JpegEncoder
             {
-                Quality = 75 
+                Quality = 75
             };
             await image.SaveAsync(outputPath, encoder);
         }
@@ -474,71 +515,88 @@ public async Task<bool> AsignarClienteATareaAsync(int tareaId, int? clienteId, i
                             st.Tarea.Proyecto.EmpresaId == empresaId);
     }
 
-public async Task<bool> AsignarClienteATareaAsync(AsignarClienteTareaDto dto, int empresaId)
-{
-    var tarea = await _context.Tareas
-        .Include(t => t.Proyecto)
-        .FirstOrDefaultAsync(t => t.Id == dto.TareaId && t.Proyecto.EmpresaId == empresaId);
-
-    if (tarea == null)
-        return false;
-
-    if (dto.ClienteId.HasValue)
+    public async Task<bool> AsignarClienteATareaAsync(AsignarClienteTareaDto dto, int empresaId)
     {
-        var cliente = await _context.Clientes
-            .FirstOrDefaultAsync(c => c.Id == dto.ClienteId.Value && c.EmpresaId == empresaId);
+        var tarea = await _context.Tareas
+            .Include(t => t.Proyecto)
+            .FirstOrDefaultAsync(t => t.Id == dto.TareaId && t.Proyecto.EmpresaId == empresaId);
 
-        if (cliente == null)
+        if (tarea == null)
             return false;
 
-        tarea.ClienteId = cliente.Id;
-    }
-    else
-    {
-        tarea.ClienteId = null; // Desasignar cliente
+        if (dto.ClienteId.HasValue)
+        {
+            var cliente = await _context.Clientes
+                .FirstOrDefaultAsync(c => c.Id == dto.ClienteId.Value && c.EmpresaId == empresaId);
+
+            if (cliente == null)
+                return false;
+
+            tarea.ClienteId = cliente.Id;
+        }
+        else
+        {
+            tarea.ClienteId = null; // Desasignar cliente
+        }
+
+        await _context.SaveChangesAsync();
+        return true;
     }
 
+    public async Task<SubTarea?> CrearSubtareaAsync(int tareaId, CreateSubtareaDto dto, int empresaId)
+    {
+        // Validar que la tarea exista y pertenezca a la empresa
+        var tarea = await _context.Tareas
+            .Include(t => t.Proyecto)
+            .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto.EmpresaId == empresaId);
+
+        if (tarea == null)
+            return null;
+
+        var subtarea = new SubTarea
+        {
+            TareaId = tareaId,
+            Descripcion = dto.Descripcion,
+            Completada = dto.Completada
+        };
+
+        _context.SubTareas.Add(subtarea);
+        await _context.SaveChangesAsync();
+
+        return subtarea;
+    }
+
+    public async Task<List<Tarea>> ObtenerTodasLasTareasAsync(int empresaId)
+    {
+        return await _context.Tareas
+            .Include(t => t.Proyecto)
+            .Include(t => t.Comentarios)
+                .ThenInclude(c => c.Usuario)
+            .Include(t => t.Asignados)
+                .ThenInclude(a => a.Usuario)
+            .Include(t => t.Adjuntos)
+            .Include(t => t.SubTareas)
+            .Where(t => t.Proyecto.EmpresaId == empresaId)
+            .ToListAsync();
+    }
+
+public async Task AgregarDatosTecnicosAsync(DatosTecnicos datosTecnicos)
+{
+    _context.DatosTecnicos.Add(datosTecnicos);
     await _context.SaveChangesAsync();
-    return true;
 }
 
-public async Task<SubTarea?> CrearSubtareaAsync(int tareaId, CreateSubtareaDto dto, int empresaId)
+public async Task EliminarDatosTecnicosPorTareaAsync(int tareaId)
 {
-    // Validar que la tarea exista y pertenezca a la empresa
-    var tarea = await _context.Tareas
-        .Include(t => t.Proyecto)
-        .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto.EmpresaId == empresaId);
-
-    if (tarea == null)
-        return null;
-
-    var subtarea = new SubTarea
-    {
-        TareaId = tareaId,
-        Descripcion = dto.Descripcion,
-        Completada = dto.Completada
-    };
-
-    _context.SubTareas.Add(subtarea);
-    await _context.SaveChangesAsync();
-
-    return subtarea;
-}
-
-public async Task<List<Tarea>> ObtenerTodasLasTareasAsync(int empresaId)
-{
-    return await _context.Tareas
-        .Include(t => t.Proyecto)
-        .Include(t => t.Comentarios)
-            .ThenInclude(c => c.Usuario)
-        .Include(t => t.Asignados)
-            .ThenInclude(a => a.Usuario)
-        .Include(t => t.Adjuntos)
-        .Include(t => t.SubTareas)
-        .Where(t => t.Proyecto.EmpresaId == empresaId)
+    var existentes = await _context.DatosTecnicos
+        .Where(dt => dt.TareaId == tareaId)
         .ToListAsync();
+
+    _context.DatosTecnicos.RemoveRange(existentes);
+    await _context.SaveChangesAsync();
 }
- public async Task<List<TareasPorClienteDto>> ObtenerTareasAgrupadasPorClienteAsync(int empresaId)
+
+    public async Task<List<TareasPorClienteDto>> ObtenerTareasAgrupadasPorClienteAsync(int empresaId)
     {
         var query = _context.TareaAsignados
             .Include(ta => ta.Tarea)
@@ -549,7 +607,8 @@ public async Task<List<Tarea>> ObtenerTodasLasTareasAsync(int empresaId)
             .AsQueryable();
 
         var result = await query
-            .GroupBy(ta => new {
+            .GroupBy(ta => new
+            {
                 ClienteId = ta.Tarea.Cliente!.Id,
                 ClienteNombre = ta.Tarea.Cliente.Nombre
             })
@@ -566,4 +625,7 @@ public async Task<List<Tarea>> ObtenerTodasLasTareasAsync(int empresaId)
 
         return result;
     }
+    
+
+    
 }

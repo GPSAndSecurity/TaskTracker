@@ -23,12 +23,15 @@ public class Tarea
 
     public EstadoTarea Estado { get; set; } = EstadoTarea.Pendiente;
 
-// 🔽 Relación opcional con Cliente
+    // 🔽 Relación opcional con Cliente
     public int? ClienteId { get; set; }  // Nullable para que sea opcional
     public Cliente? Cliente { get; set; }
+    public decimal Presupuesto { get; set; } = 0m;
 
     public List<TareaAsignado> Asignados { get; set; } = new();
     public List<TareaAdjunto> Adjuntos { get; set; } = new();
     public List<TareaComentario> Comentarios { get; set; } = new();
     public List<SubTarea> SubTareas { get; set; } = new();
+    public List<DatosTecnicos> DatosTecnicos { get; set; } = new();
+
 }

@@ -9,6 +9,10 @@ namespace TaskTracker.DTOs
     public DateTime? FechaInicioEstimado { get; set; }
     public DateTime? FechaFinEstimado { get; set; }
     public Prioridad Prioridad { get; set; } = Prioridad.Media;
+        public decimal Presupuesto { get; set; } = 0m;
+
+public List<CreateDatosTecnicosDto>? DatosTecnicos { get; set; }
+
     public bool AttachmentRequerido { get; set; } = false;
     public bool UbicacionRequeridaAlCerrar { get; set; } = false;
 }

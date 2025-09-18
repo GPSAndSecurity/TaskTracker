@@ -46,8 +46,7 @@ namespace TaskTracker.Controllers
         }
 
 
-        
-        [HttpGet("{tareaId}")]
+[HttpGet("{tareaId}")]
 public async Task<IActionResult> ObtenerDetalleTarea(int tareaId)
 {
     var empresaId = GetEmpresaIdFromToken();
@@ -56,6 +55,7 @@ public async Task<IActionResult> ObtenerDetalleTarea(int tareaId)
     var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
     if (tarea == null) return NotFound();
 
+    // Mapear comentarios con nombre de usuario
     var comentariosConNombre = tarea.Comentarios.Select(c => new
     {
         c.Id,
@@ -67,19 +67,40 @@ public async Task<IActionResult> ObtenerDetalleTarea(int tareaId)
 
     var colaboradores = await _tareaService.ObtenerColaboradoresPorTareaAsync(tareaId, empresaId.Value);
 
+    // Mapear datos técnicos
+    var datosTecnicos = tarea.DatosTecnicos?.Select(dt => new DatosTecnicosDto
+    {
+        Id = dt.Id,
+        VehiculoMarca = dt.VehiculoMarca,
+        VehiculoModelo = dt.VehiculoModelo,
+        VehiculoTipo = dt.VehiculoTipo,
+        VehiculoCodigo = dt.VehiculoCodigo,
+        VehiculoPlaca = dt.VehiculoPlaca,
+        VehiculoVin = dt.VehiculoVin,
+        GpsSerie = dt.GpsSerie,
+        GpsImei = dt.GpsImei,
+        SimCompania = dt.SIMCompania,
+        SimCodigo = dt.SIMCodigo,
+        InstalacionAccesorios = dt.InstalacionAccesorios,
+        TecnicoInstalador = dt.TecnicoInstalador,
+        FirmaCliente = dt.FirmaCliente,
+        TiposTrabajo = dt.TiposTrabajo.Select(tt => tt.TipoTrabajo.ToString()).ToList()
+    }).ToList();
+
     var tareaDto = new
     {
         tarea.Id,
         tarea.Descripcion,
         Ubicacion = tarea.Ubicacion != null ? new
-            {
-                tarea.Ubicacion.Id,
-                tarea.Ubicacion.Nombre
-            } : null,
+        {
+            tarea.Ubicacion.Id,
+            tarea.Ubicacion.Nombre
+        } : null,
         tarea.Estado,
         tarea.FechaInicioEstimado,
         tarea.FechaFinEstimado,
-        tarea.Prioridad,  
+        tarea.Prioridad,
+        tarea.Presupuesto,
         Comentarios = comentariosConNombre,
         Asignados = colaboradores,
         SubTareas = tarea.SubTareas.Select(st => new SubTareaDto
@@ -93,15 +114,16 @@ public async Task<IActionResult> ObtenerDetalleTarea(int tareaId)
             tarea.Cliente.Id,
             tarea.Cliente.Nombre,
             tarea.Cliente.Encargado,
-            tarea.Cliente.Correo, 
+            tarea.Cliente.Correo,
             tarea.Cliente.Telefono
         } : null,
-
-        ProyectoId = tarea.ProyectoId  
+        ProyectoId = tarea.ProyectoId,
+        DatosTecnicos = datosTecnicos
     };
 
     return Ok(tareaDto);
 }
+
 
 [HttpPost("{tareaId}/asignar-cliente")]
 [Authorize(Roles = "admin_empresa,superadmin,colaborador")]
@@ -393,6 +415,7 @@ public async Task<IActionResult> AsignarClienteATarea(int tareaId, [FromBody] As
         [Authorize(Roles = "admin_empresa,superadmin")]
         public async Task<IActionResult> CrearTarea([FromBody] CreateTareaDto dto)
         {
+            
             var empresaId = GetEmpresaIdFromToken();
             if (empresaId == null) return Unauthorized();
 
@@ -410,36 +433,73 @@ public async Task<IActionResult> AsignarClienteATarea(int tareaId, [FromBody] As
             return CreatedAtAction(nameof(ObtenerDetalleTarea), new { tareaId = tarea.Id }, tarea);
         }
 
-        [HttpPut("{tareaId}")]
-        [Authorize(Roles = "admin_empresa,superadmin")]
-        public async Task<IActionResult> ActualizarTarea(int tareaId, [FromBody] UpdateTareaDto dto)
+      [HttpPut("{tareaId}")]
+[Authorize(Roles = "admin_empresa,superadmin")]
+public async Task<IActionResult> ActualizarTarea(int tareaId, [FromBody] UpdateTareaDto dto)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null) return Unauthorized();
+
+    var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
+    if (tarea == null) return NotFound("Tarea no encontrada.");
+
+    // ✅ Actualizar propiedades de la tarea
+    tarea.Descripcion = dto.Descripcion;
+    tarea.UbicacionId = dto.UbicacionId;
+    tarea.FechaInicioEstimado = dto.FechaInicioEstimado;
+    tarea.FechaFinEstimado = dto.FechaFinEstimado;
+    tarea.Presupuesto = dto.Presupuesto;
+    tarea.Prioridad = dto.Prioridad;
+    tarea.AttachmentRequerido = dto.AttachmentRequerido;
+    tarea.UbicacionRequeridaAlCerrar = dto.UbicacionRequeridaAlCerrar;
+
+    await _tareaService.ActualizarTareaAsync(tarea);
+
+    // ✅ Procesar Datos Técnicos (si vienen en el DTO)
+    if (dto.DatosTecnicos != null)
+    {
+        // Eliminar existentes
+        await _tareaService.EliminarDatosTecnicosPorTareaAsync(tarea.Id);
+
+        // Agregar nuevos
+        foreach (var dtDto in dto.DatosTecnicos)
         {
-            var empresaId = GetEmpresaIdFromToken();
-            if (empresaId == null) return Unauthorized();
+            var datosTecnicos = new DatosTecnicos
+            {
+                TareaId = tarea.Id,
+                VehiculoMarca = dtDto.VehiculoMarca,
+                VehiculoModelo = dtDto.VehiculoModelo,
+                VehiculoTipo = dtDto.VehiculoTipo,
+                VehiculoCodigo = dtDto.VehiculoCodigo,
+                VehiculoPlaca = dtDto.VehiculoPlaca,
+                VehiculoVin = dtDto.VehiculoVin,
+                GpsSerie = dtDto.GpsSerie,
+                GpsImei = dtDto.GpsImei,
+                SIMCompania = dtDto.SimCompania,
+                SIMCodigo = dtDto.SimCodigo,
+                InstalacionAccesorios = dtDto.InstalacionAccesorios,
+                TecnicoInstalador = dtDto.TecnicoInstalador,
+                FirmaCliente = dtDto.FirmaCliente,
+                TiposTrabajo = dtDto.TiposTrabajo?.Select(tipoStr => new TareaTipoTrabajo
+                {
+                    TipoTrabajo = Enum.Parse<TipoTrabajo>(tipoStr, ignoreCase: true)
+                }).ToList() ?? new()
+            };
 
-            var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
-            if (tarea == null) return NotFound("Tarea no encontrada.");
-
-            tarea.Descripcion = dto.Descripcion;
-            tarea.UbicacionId = dto.UbicacionId;
-            tarea.FechaInicioEstimado = dto.FechaInicioEstimado;
-            tarea.FechaFinEstimado = dto.FechaFinEstimado;
-            tarea.Prioridad = dto.Prioridad;
-            tarea.AttachmentRequerido = dto.AttachmentRequerido;
-            tarea.UbicacionRequeridaAlCerrar = dto.UbicacionRequeridaAlCerrar;
-
-            await _tareaService.ActualizarTareaAsync(tarea);
-
-            await _auditoriaService.RegistrarEventoAsync(
-                accion: "Editar Tarea",
-                entidad: "Tarea",
-                entidadId: tarea.Id,
-                descripcion: $"Se actualizó la tarea '{tarea.Descripcion}'",
-                 generaNotificacion: true
-            );
-
-            return Ok(tarea);
+            await _tareaService.AgregarDatosTecnicosAsync(datosTecnicos);
         }
+    }
+
+    await _auditoriaService.RegistrarEventoAsync(
+        accion: "Editar Tarea",
+        entidad: "Tarea",
+        entidadId: tarea.Id,
+        descripcion: $"Se actualizó la tarea '{tarea.Descripcion}'",
+        generaNotificacion: true
+    );
+
+    return Ok(tarea);
+}
 
 
         [HttpGet("por-proyecto/{proyectoId}/asignadas")]

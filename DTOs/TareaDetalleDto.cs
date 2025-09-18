@@ -14,10 +14,12 @@ namespace TaskTracker.DTOs
         public DateTime? FechaFinEstimado { get; set; }
         public Prioridad Prioridad { get; set; }
         public EstadoTarea Estado { get; set; }
+    public decimal Presupuesto { get; set; } = 0m;
 
         public List<ComentarioDto> Comentarios { get; set; } = new();
         public List<SubTareaDto> SubTareas { get; set; } = new();
         public List<AdjuntoDto> Adjuntos { get; set; } = new();
-   
+        public List<DatosTecnicosDto> DatosTecnicos { get; set; } = new();
+
  }
 }

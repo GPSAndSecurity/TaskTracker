@@ -22,6 +22,19 @@ namespace TaskTracker.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("TareaTipoTrabajo", b =>
+                {
+                    b.Property<int>("DatosTecnicosId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TipoTrabajo")
+                        .HasColumnType("int");
+
+                    b.HasKey("DatosTecnicosId", "TipoTrabajo");
+
+                    b.ToTable("TareaTipoTrabajos");
+                });
+
             modelBuilder.Entity("TaskTracker.Models.Auditoria", b =>
                 {
                     b.Property<int>("Id")
@@ -100,6 +113,63 @@ namespace TaskTracker.Migrations
                     b.HasIndex("EmpresaId");
 
                     b.ToTable("Clientes");
+                });
+
+            modelBuilder.Entity("TaskTracker.Models.DatosTecnicos", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FirmaCliente")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("GpsImei")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("GpsSerie")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("InstalacionAccesorios")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("SIMCodigo")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("SIMCompania")
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("TareaId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TecnicoInstalador")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("VehiculoCodigo")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("VehiculoMarca")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("VehiculoModelo")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("VehiculoPlaca")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("VehiculoTipo")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("VehiculoVin")
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TareaId");
+
+                    b.ToTable("DatosTecnicos");
                 });
 
             modelBuilder.Entity("TaskTracker.Models.Empresa", b =>
@@ -241,6 +311,9 @@ namespace TaskTracker.Migrations
 
                     b.Property<DateTime?>("FechaInicioEstimado")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<decimal>("Presupuesto")
+                        .HasColumnType("decimal(65,30)");
 
                     b.Property<int>("Prioridad")
                         .HasColumnType("int");
@@ -419,6 +492,17 @@ namespace TaskTracker.Migrations
                     b.ToTable("Ubicaciones");
                 });
 
+            modelBuilder.Entity("TareaTipoTrabajo", b =>
+                {
+                    b.HasOne("TaskTracker.Models.DatosTecnicos", "DatosTecnicos")
+                        .WithMany("TiposTrabajo")
+                        .HasForeignKey("DatosTecnicosId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DatosTecnicos");
+                });
+
             modelBuilder.Entity("TaskTracker.Models.Auditoria", b =>
                 {
                     b.HasOne("TaskTracker.Models.Usuario", "UsuarioGenerador")
@@ -444,6 +528,17 @@ namespace TaskTracker.Migrations
                         .IsRequired();
 
                     b.Navigation("Empresa");
+                });
+
+            modelBuilder.Entity("TaskTracker.Models.DatosTecnicos", b =>
+                {
+                    b.HasOne("TaskTracker.Models.Tarea", "Tarea")
+                        .WithMany("DatosTecnicos")
+                        .HasForeignKey("TareaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tarea");
                 });
 
             modelBuilder.Entity("TaskTracker.Models.Proyecto", b =>
@@ -582,6 +677,11 @@ namespace TaskTracker.Migrations
                     b.Navigation("Empresa");
                 });
 
+            modelBuilder.Entity("TaskTracker.Models.DatosTecnicos", b =>
+                {
+                    b.Navigation("TiposTrabajo");
+                });
+
             modelBuilder.Entity("TaskTracker.Models.Empresa", b =>
                 {
                     b.Navigation("Clientes");
@@ -605,6 +705,8 @@ namespace TaskTracker.Migrations
                     b.Navigation("Asignados");
 
                     b.Navigation("Comentarios");
+
+                    b.Navigation("DatosTecnicos");
 
                     b.Navigation("SubTareas");
                 });
