@@ -565,6 +565,18 @@ public class TareaService
 
         return subtarea;
     }
+public async Task<bool> EliminarSubtareaAsync(int tareaId, int subtareaId)
+{
+    var subtarea = await _context.SubTareas
+        .FirstOrDefaultAsync(s => s.Id == subtareaId && s.TareaId == tareaId);
+
+    if (subtarea == null)
+        return false;
+
+    _context.SubTareas.Remove(subtarea);
+    await _context.SaveChangesAsync();
+    return true;
+}
 
     public async Task<List<Tarea>> ObtenerTodasLasTareasAsync(int empresaId)
     {

@@ -30,6 +30,7 @@ namespace TaskTracker.Services
                 Nombre = dto.Nombre,
                 Correo = dto.Correo,
                 Telefono = dto.Telefono,
+                Encargado = dto.Encargado,  
                 EmpresaId = dto.EmpresaId
             };
 
@@ -38,7 +39,6 @@ namespace TaskTracker.Services
             return cliente;
         }
 
-        // Obtener cliente por id
         // Obtener cliente por id y empresa
 public async Task<Cliente?> ObtenerClientePorIdAsync(int id, int empresaId)
 {
@@ -55,6 +55,7 @@ public async Task<bool> ActualizarClienteAsync(int id, UpdateClienteDto dto, int
 
     cliente.Nombre = dto.Nombre;
     cliente.Correo = dto.Correo;
+    cliente.Encargado = dto.Encargado;  
     cliente.Telefono = dto.Telefono;
 
     await _context.SaveChangesAsync();

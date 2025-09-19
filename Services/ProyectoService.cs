@@ -111,35 +111,36 @@ public async Task<bool> ActualizarProyectoAsync(int id, UpdateProyectoDto dto)
 
         // Obtener proyectos con avance (para admins/empresa)
         public async Task<List<ProyectoConAvanceDto>> ObtenerProyectosConAvanceAsync(int empresaId)
+{
+    var proyectos = await _context.Proyectos
+        .Where(p => p.EmpresaId == empresaId)
+        .Include(p => p.Tareas)
+        .ToListAsync();
+
+    return proyectos.Select(p =>
+    {
+        double porcentaje = 0;
+        var tareasValidas = p.Tareas.Where(t => t.Estado != EstadoTarea.Archivada).ToList(); // Excluir estado 5
+
+        if (tareasValidas.Any())
         {
-            var proyectos = await _context.Proyectos
-                .Where(p => p.EmpresaId == empresaId)
-                .Include(p => p.Tareas)
-                .ToListAsync();
-
-            return proyectos.Select(p =>
-            {
-                double porcentaje = 0;
-                if (p.Tareas.Any())
-                {
-                    var totalTareas = p.Tareas.Count;
-                    var tareasFinalizadas = p.Tareas.Count(t => t.Estado == EstadoTarea.Finalizada);
-                    porcentaje = (double)tareasFinalizadas / totalTareas * 100;
-                }
-
-                return new ProyectoConAvanceDto
-                {
-                    Id = p.Id,
-                    Nombre = p.Nombre,
-                    Descripcion = p.Descripcion,
-                    FechaInicio = p.FechaInicio,
-                    FechaFin = p.FechaFin,
-                    PorcentajeAvance = Math.Round(porcentaje, 2),
-                    Archivado = p.Archivado
-
-                };
-            }).ToList();
+            var totalTareas = tareasValidas.Count;
+            var tareasFinalizadas = tareasValidas.Count(t => t.Estado == EstadoTarea.Finalizada);
+            porcentaje = (double)tareasFinalizadas / totalTareas * 100;
         }
+
+        return new ProyectoConAvanceDto
+        {
+            Id = p.Id,
+            Nombre = p.Nombre,
+            Descripcion = p.Descripcion,
+            FechaInicio = p.FechaInicio,
+            FechaFin = p.FechaFin,
+            PorcentajeAvance = Math.Round(porcentaje, 2),
+            Archivado = p.Archivado
+        };
+    }).ToList();
+}
 
         // Obtener proyectos asignados a un colaborador con tareas en estados específicos
         public async Task<List<ProyectoConTareasDto>> ObtenerProyectosAsignadosAColaboradorAsync(int usuarioId)
