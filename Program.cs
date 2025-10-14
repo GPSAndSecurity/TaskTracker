@@ -83,7 +83,9 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:4200")
+        policy.WithOrigins("http://localhost:4200", //website
+                      "http://localhost:8100"
+                      )
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -96,6 +98,7 @@ builder.Services.Configure<FormOptions>(options =>
 });
 
 var app = builder.Build();
+
 
 // 🔹 SEED DATA (ADMIN DEFAULT)
 using (var scope = app.Services.CreateScope())

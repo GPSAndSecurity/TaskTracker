@@ -26,7 +26,8 @@ public class UsuarioService
             Email = dto.Email,
             PasswordHash = passwordHash,
             Rol = dto.Rol,
-            EmpresaId = dto.EmpresaId
+            EmpresaId = dto.EmpresaId,
+            Activo = true,
         };
 
         _context.Usuarios.Add(usuario);

@@ -94,7 +94,9 @@ namespace TaskTracker.Controllers
                 Ubicacion = tarea.Ubicacion != null ? new
                 {
                     tarea.Ubicacion.Id,
-                    tarea.Ubicacion.Nombre
+                    tarea.Ubicacion.Nombre,
+                    tarea.Ubicacion.Latitud,
+                    tarea.Ubicacion.Longitud,
                 } : null,
                 tarea.Estado,
                 tarea.FechaInicioEstimado,
@@ -529,7 +531,7 @@ namespace TaskTracker.Controllers
             if (archivo == null || archivo.Length == 0)
                 return BadRequest("Archivo inválido");
 
-            if (archivo.Length > 5 * 1024 * 1024) // 5MB
+            if (archivo.Length > 10 * 1024 * 1024) // 10MB
                 return BadRequest("El archivo excede el tamaño máximo de 5MB.");
 
             // Obtener nombres legibles

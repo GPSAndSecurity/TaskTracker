@@ -136,6 +136,7 @@ public async Task<bool> ActualizarProyectoAsync(int id, UpdateProyectoDto dto)
             Descripcion = p.Descripcion,
             FechaInicio = p.FechaInicio,
             FechaFin = p.FechaFin,
+            TotalTareas = p.Tareas.Count(),  
             PorcentajeAvance = Math.Round(porcentaje, 2),
             Archivado = p.Archivado
         };
@@ -332,7 +333,7 @@ public async Task<bool> ActualizarProyectoAsync(int id, UpdateProyectoDto dto)
             }
 
             // Si ya está archivado, no hacer nada
-            if (proyecto.Archivado)
+           if (proyecto.Archivado)
                 return false;
 
             // Archivar: marcar como no activo y archivado
@@ -343,17 +344,18 @@ public async Task<bool> ActualizarProyectoAsync(int id, UpdateProyectoDto dto)
             return true;
         }
 
-
 public async Task<bool> DesarchivarProyectoAsync(int proyectoId)
 {
     var proyecto = await _context.Proyectos.FindAsync(proyectoId);
     if (proyecto == null)
         return false;
 
-    proyecto.Archivado = false;
+    proyecto.Activo = true;         
+    proyecto.Archivado = false;     
     await _context.SaveChangesAsync();
     return true;
 }
+
 public async Task<Proyecto?> ObtenerPorIdAsync(int id)
 {
     return await _context.Proyectos.FindAsync(id);
