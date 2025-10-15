@@ -6,6 +6,7 @@ namespace TaskTracker.DTOs
     {
         public int Id { get; set; }
         public string Descripcion { get; set; } = string.Empty;
+        public string Detalles { get; set; } = string.Empty;
 
         public string? UbicacionNombre { get; set; }
         public Ubicacion? Ubicacion { get; set; }

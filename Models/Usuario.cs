@@ -9,7 +9,6 @@ public class Usuario
     public string PasswordHash { get; set; } = string.Empty;
     public string Rol { get; set; } = "colaborador"; // superadmin, admin_empresa, colaborador
     public bool Activo { get; set; } = true;
-
     public int? EmpresaId { get; set; }
     public Empresa? Empresa { get; set; }
     public List<ProyectoColaborador> ProyectosAsignados { get; set; } = new();

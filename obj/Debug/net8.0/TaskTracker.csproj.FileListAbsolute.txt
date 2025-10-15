@@ -242,3 +242,4 @@ C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\refint\TaskTracker.dll
 C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.pdb
 C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.genruntimeconfig.cache
 C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\ref\TaskTracker.dll
+C:\Users\gps and security\TaskTracker\bin\Debug\net8.0\BCrypt.Net-Next.dll

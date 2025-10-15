@@ -91,6 +91,7 @@ namespace TaskTracker.Controllers
             {
                 tarea.Id,
                 tarea.Descripcion,
+                tarea.Detalles,
                 Ubicacion = tarea.Ubicacion != null ? new
                 {
                     tarea.Ubicacion.Id,

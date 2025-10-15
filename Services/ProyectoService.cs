@@ -176,6 +176,7 @@ public async Task<bool> ActualizarProyectoAsync(int id, UpdateProyectoDto dto)
                         Ubicacion = t.Ubicacion,
                         FechaInicioEstimado = t.FechaInicioEstimado,
                         FechaFinEstimado = t.FechaFinEstimado,
+                        Detalles = t.Detalles,
                         Prioridad = t.Prioridad,
                         Estado = t.Estado,
                         Comentarios = t.Comentarios.Select(c => new ComentarioDto

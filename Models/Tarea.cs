@@ -6,6 +6,7 @@ public class Tarea
 
     public int ProyectoId { get; set; }
     public Proyecto? Proyecto { get; set; }
+    public string Detalles { get; set; } = string.Empty;
 
     public string Descripcion { get; set; } = string.Empty;
     public int? UbicacionId { get; set; }
@@ -18,6 +19,7 @@ public class Tarea
 
     public bool AttachmentRequerido { get; set; } = false;
     public bool UbicacionRequeridaAlCerrar { get; set; } = false;
+
 
     public DateTime? FechaCierre { get; set; }
 

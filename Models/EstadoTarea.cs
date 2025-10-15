@@ -8,5 +8,4 @@ public enum EstadoTarea
     Finalizada,
     Inconclusa,
      Archivada
-      
 }
