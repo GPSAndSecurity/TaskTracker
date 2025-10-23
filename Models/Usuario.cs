@@ -7,6 +7,9 @@ public class Usuario
     public string Lastname { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
+public bool RequiereCambioPassword { get; set; } = false;
+public string? PasswordTemporalHash { get; set; }
+
     public string Rol { get; set; } = "colaborador"; // superadmin, admin_empresa, colaborador
     public bool Activo { get; set; } = true;
     public int? EmpresaId { get; set; }

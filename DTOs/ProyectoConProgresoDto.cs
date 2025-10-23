@@ -9,4 +9,6 @@ public class ProyectoConAvanceDto
     public bool Archivado { get; set; } // 👈 Asegúrate de incluir esto
     public int TotalTareas { get; set; }
 
+
+
 }

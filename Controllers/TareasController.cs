@@ -104,6 +104,8 @@ namespace TaskTracker.Controllers
                 tarea.FechaFinEstimado,
                 tarea.Prioridad,
                 tarea.Presupuesto,
+                tarea.AttachmentRequerido,
+                tarea.UbicacionRequeridaAlCerrar,
                 Comentarios = comentariosConNombre,
                 Asignados = colaboradores,
                 SubTareas = tarea.SubTareas.Select(st => new SubTareaDto

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TaskTracker.Data;
 
@@ -11,9 +12,11 @@ using TaskTracker.Data;
 namespace TaskTracker.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251016145733_bycript")]
+    partial class bycript
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -454,15 +457,12 @@ namespace TaskTracker.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<string>("PasswordTemporalHash")
-                        .HasColumnType("longtext");
-
-                    b.Property<bool>("RequiereCambioPassword")
-                        .HasColumnType("tinyint(1)");
-
                     b.Property<string>("Rol")
                         .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<bool>("UsaBcrypt")
+                        .HasColumnType("tinyint(1)");
 
                     b.HasKey("Id");
 

@@ -127,6 +127,7 @@ C:\Users\gps and security\TaskTracker\bin\Debug\net8.0\TaskTracker.deps.json
 C:\Users\gps and security\TaskTracker\bin\Debug\net8.0\TaskTracker.runtimeconfig.json
 C:\Users\gps and security\TaskTracker\bin\Debug\net8.0\TaskTracker.dll
 C:\Users\gps and security\TaskTracker\bin\Debug\net8.0\TaskTracker.pdb
+C:\Users\gps and security\TaskTracker\bin\Debug\net8.0\BCrypt.Net-Next.dll
 C:\Users\gps and security\TaskTracker\bin\Debug\net8.0\Humanizer.dll
 C:\Users\gps and security\TaskTracker\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
 C:\Users\gps and security\TaskTracker\bin\Debug\net8.0\Microsoft.AspNetCore.OpenApi.dll
@@ -242,4 +243,3 @@ C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\refint\TaskTracker.dll
 C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.pdb
 C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\TaskTracker.genruntimeconfig.cache
 C:\Users\gps and security\TaskTracker\obj\Debug\net8.0\ref\TaskTracker.dll
-C:\Users\gps and security\TaskTracker\bin\Debug\net8.0\BCrypt.Net-Next.dll

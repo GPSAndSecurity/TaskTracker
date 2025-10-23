@@ -171,11 +171,11 @@ public DbSet<TareaTipoTrabajo> TareaTipoTrabajos { get; set; }
 
         try
         {
-            string HashPassword(string password)
-            {
-                using var sha256 = SHA256.Create();
-                return Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
-            }
+           string HashPassword(string password)
+{
+    return BCrypt.Net.BCrypt.HashPassword(password);
+}
+
 
             var superadmin = new Usuario
             {

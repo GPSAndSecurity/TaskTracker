@@ -83,12 +83,10 @@ public async Task<List<Usuario>> ObtenerColaboradoresPorEmpresaAsync(int empresa
     }
 
    
-    // Hash de la contraseña, usando el SHA256 porque segun es mejor bcrypt. es mas rapido y seguro que bcrypt 
-    private string HashPassword(string password)
-    {
-        using var sha256 = SHA256.Create();
-        return Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
-    }
+private string HashPassword(string password)
+{
+    return BCrypt.Net.BCrypt.HashPassword(password);
+}
 
     public async Task<int> ContarColaboradoresPorEmpresaAsync(int empresaId)
     {

@@ -17,6 +17,11 @@ namespace TaskTracker.DTOs
         public EstadoTarea Estado { get; set; }
     public decimal Presupuesto { get; set; } = 0m;
 
+public bool AttachmentRequerido { get; set; } = false;
+    public bool UbicacionRequeridaAlCerrar { get; set; } = false;
+
+
+
         public List<ComentarioDto> Comentarios { get; set; } = new();
         public List<SubTareaDto> SubTareas { get; set; } = new();
         public List<AdjuntoDto> Adjuntos { get; set; } = new();
