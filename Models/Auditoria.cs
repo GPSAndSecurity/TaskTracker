@@ -7,8 +7,8 @@ namespace TaskTracker.Models
         public int? UsuarioId { get; set; }
         public Usuario? Usuario { get; set; }
 
-        public int? UsuarioGeneradorId { get; set; }  // 👈 Nuevo campo
-        public Usuario? UsuarioGenerador { get; set; } // 👈 Relación opcional
+        public int? UsuarioGeneradorId { get; set; }  
+        public Usuario? UsuarioGenerador { get; set; } 
 
         public string Accion { get; set; } = string.Empty;
         public string Entidad { get; set; } = string.Empty;
@@ -19,7 +19,7 @@ namespace TaskTracker.Models
 
         public bool GeneraNotificacion { get; set; } = false;
 
-        public bool Visto { get; set; } = false; // 👈 Nuevo campo
+        public bool Visto { get; set; } = false; 
 
     }
 }

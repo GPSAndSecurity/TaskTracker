@@ -1,8 +1,8 @@
 public class ComentarioAdjuntoDto
 {
-    public bool EsAdjunto { get; set; } // true si es un adjunto, false si es comentario
-    public string UsuarioNombre { get; set; } = string.Empty; // solo para comentario
-    public string ComentarioTexto { get; set; } = string.Empty; // solo para comentario
+    public bool EsAdjunto { get; set; } 
+    public string UsuarioNombre { get; set; } = string.Empty; 
+    public string ComentarioTexto { get; set; } = string.Empty; 
     public DateTime FechaComentario { get; set; }
 
     // Propiedades para adjunto

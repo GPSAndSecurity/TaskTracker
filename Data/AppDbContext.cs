@@ -118,7 +118,7 @@ public DbSet<TareaTipoTrabajo> TareaTipoTrabajos { get; set; }
 
         modelBuilder.Entity<Tarea>()
             .HasOne(t => t.Ubicacion)
-            .WithMany() // o .WithMany(u => u.Tareas) si quieres la relación inversa
+            .WithMany() 
             .HasForeignKey(t => t.UbicacionId)
             .OnDelete(DeleteBehavior.SetNull);
 
@@ -146,10 +146,10 @@ public DbSet<TareaTipoTrabajo> TareaTipoTrabajos { get; set; }
 
     }
 
-    // Método para agregar datos iniciales
+    // Método para agregar datos iniciales , despues de agregarlo se puede eliminar
     public static void Seed(AppDbContext context)
     {
-        context.Database.Migrate(); // Ejecuta migraciones pendientes
+        context.Database.Migrate(); 
 
         // Verificar si ya existe la empresa
         if (!context.Empresas.Any(e => e.Id == 1))
@@ -162,7 +162,7 @@ public DbSet<TareaTipoTrabajo> TareaTipoTrabajos { get; set; }
             context.SaveChanges();
         }
 
-        // Verificar si ya existe un usuario superadmin
+        // Verificar si ya existe un usuario superadmin 
         if (context.Usuarios.Any(u => u.Rol == "superadmin"))
         {
             Console.WriteLine("✅ Ya existe un usuario superadmin.");

@@ -7,7 +7,7 @@ public class CreateTareaDto
     public int? UbicacionId { get; set; }
     public DateTime? FechaInicioEstimado { get; set; }
     public DateTime? FechaFinEstimado { get; set; }
-    public Prioridad Prioridad { get; set; } = Prioridad.Media; //este es un enum
+    public Prioridad Prioridad { get; set; } = Prioridad.Media; 
     public decimal Presupuesto { get; set; } = 0m;
 
 public List<CreateDatosTecnicosDto>? DatosTecnicos { get; set; }

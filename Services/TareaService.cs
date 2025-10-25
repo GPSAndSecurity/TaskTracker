@@ -47,7 +47,7 @@ public class TareaService
         AttachmentRequerido = dto.AttachmentRequerido,
         UbicacionRequeridaAlCerrar = dto.UbicacionRequeridaAlCerrar,
         Estado = EstadoTarea.Pendiente,
-        Presupuesto = dto.Presupuesto  // <-- Aquí lo agregas
+        Presupuesto = dto.Presupuesto  
 
     };
 
@@ -117,8 +117,8 @@ public class TareaService
                 .ThenInclude(c => c.Usuario)
             .Include(t => t.Asignados)
                 .ThenInclude(a => a.Usuario)
-            .Include(t => t.SubTareas)  // <--- Agregado aquí
-            .Include(t => t.Adjuntos)  // <--- Aquí agregas los adjuntos
+            .Include(t => t.SubTareas)  
+            .Include(t => t.Adjuntos)  
             .ToListAsync();
 
         return tareas;
@@ -139,7 +139,7 @@ public class TareaService
             .Include(t => t.Cliente)
             .Include(t => t.Ubicacion)
             .Include(t => t.DatosTecnicos)
-                .ThenInclude(dt => dt.TiposTrabajo) // <--- Esto es lo que faltaba
+                .ThenInclude(dt => dt.TiposTrabajo) 
             .FirstOrDefaultAsync(t => t.Id == tareaId && t.Proyecto!.EmpresaId == empresaId);
 
         return tarea;
@@ -166,7 +166,7 @@ public class TareaService
         }
         else
         {
-            tarea.ClienteId = null; // desasignar
+            tarea.ClienteId = null; 
         }
 
         await _context.SaveChangesAsync();
@@ -536,7 +536,7 @@ public class TareaService
         }
         else
         {
-            tarea.ClienteId = null; // Desasignar cliente
+            tarea.ClienteId = null; 
         }
 
         await _context.SaveChangesAsync();

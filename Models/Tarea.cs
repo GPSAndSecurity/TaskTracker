@@ -10,7 +10,7 @@ public class Tarea
 
     public string Descripcion { get; set; } = string.Empty;
     public int? UbicacionId { get; set; }
-    public Ubicacion? Ubicacion { get; set; } // relación opcional
+    public Ubicacion? Ubicacion { get; set; } 
 
     public DateTime? FechaInicioEstimado { get; set; }
     public DateTime? FechaFinEstimado { get; set; }
@@ -25,8 +25,8 @@ public class Tarea
 
     public EstadoTarea Estado { get; set; } = EstadoTarea.Pendiente;
 
-    // 🔽 Relación opcional con Cliente
-    public int? ClienteId { get; set; }  // Nullable para que sea opcional
+    // Relación opcional con Cliente
+    public int? ClienteId { get; set; }  
     public Cliente? Cliente { get; set; }
     public decimal Presupuesto { get; set; } = 0m;
 

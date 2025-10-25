@@ -12,7 +12,7 @@ namespace TaskTracker.DTOs
 
         public List<TareaDetalleDto> Tareas { get; set; } = new();
 
-         public bool Archivado { get; set; } // 👈 Asegúrate de incluir esto
+         public bool Archivado { get; set; } 
 
     }
 

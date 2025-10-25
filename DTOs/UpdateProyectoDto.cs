@@ -6,6 +6,5 @@ namespace TaskTracker.DTOs
         public string? Descripcion { get; set; }
         public DateTime? FechaInicio { get; set; }
         public DateTime? FechaFin { get; set; }
-        // Agrega más propiedades según lo que se permita actualizar
     }
 }

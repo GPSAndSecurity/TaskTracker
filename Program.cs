@@ -10,12 +10,12 @@ using TaskTracker.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 🔹 CONEXIÓN A MYSQL
+// CONEXIÓN A MYSQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
-// 🔹 JWT
+// JWT
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("JWT Key not found in configuration.");
 
@@ -56,7 +56,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// 🔹 INYECCIÓN DE SERVICIOS
+//  INYECCIÓN DE SERVICIOS
 builder.Services.AddScoped<UsuarioService>();
 builder.Services.AddScoped<EmpresaService>();
 builder.Services.AddScoped<JwtService>();
@@ -69,7 +69,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 
-// 🔹 CONFIG JSON
+//  CONFIG JSON
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -78,7 +78,7 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNamingPolicy = null;
     });
 
-// 🔹 CORS
+//  CORS
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -91,7 +91,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 🔹 PERMITIR ARCHIVOS MULTIPART HASTA 20MB
+// PERMITIR ARCHIVOS MULTIPART HASTA 20MB
 builder.Services.Configure<FormOptions>(options =>
 {
     options.MultipartBodyLengthLimit = 20 * 1024 * 1024; // 20 MB
@@ -100,14 +100,14 @@ builder.Services.Configure<FormOptions>(options =>
 var app = builder.Build();
 
 
-// 🔹 SEED DATA (ADMIN DEFAULT)
+//  SEED DATA (ADMIN DEFAULT)
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     AppDbContext.Seed(context);
 }
 
-// 🔹 MIDDLEWARE
+//  MIDDLEWARE
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -118,7 +118,7 @@ app.UseHttpsRedirection();
 
 app.UseCors();
 
-// 🔹 Servir archivos estáticos desde la carpeta "Uploads"
+//  Servir archivos estáticos desde la carpeta "Uploads"
 var UploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
 app.UseStaticFiles(new StaticFileOptions
 {

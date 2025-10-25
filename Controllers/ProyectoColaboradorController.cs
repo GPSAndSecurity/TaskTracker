@@ -9,12 +9,12 @@ using System.Security.Claims;
 public class ProyectosColaboradorController : ControllerBase
 {
     private readonly ProyectoService _proyectoService;
-    private readonly AuditoriaService _auditoria;  // Inyectar auditoría
+    private readonly AuditoriaService _auditoria;  
 
     public ProyectosColaboradorController(ProyectoService proyectoService, AuditoriaService auditoria)
     {
         _proyectoService = proyectoService;
-        _auditoria = auditoria;  // asignar
+        _auditoria = auditoria;  
     }
 
     // GET: api/proyectos/asignados

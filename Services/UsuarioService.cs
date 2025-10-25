@@ -43,21 +43,21 @@ public class UsuarioService
     }
 
     // Obtener todos los usuarios
-   public async Task<List<Usuario>> ObtenerTodosAsync(bool incluirInactivos = false)
-{
-    if (incluirInactivos)
-        return await _context.Usuarios.ToListAsync();
+    public async Task<List<Usuario>> ObtenerTodosAsync(bool incluirInactivos = false)
+    {
+        if (incluirInactivos)
+            return await _context.Usuarios.ToListAsync();
 
-    return await _context.Usuarios.Where(u => u.Activo).ToListAsync();
-}
+        return await _context.Usuarios.Where(u => u.Activo).ToListAsync();
+    }
 
-public async Task<List<Usuario>> ObtenerColaboradoresPorEmpresaAsync(int empresaId, bool incluirInactivos = false)
-{
-    if (incluirInactivos)
-        return await _context.Usuarios.Where(u => u.EmpresaId == empresaId).ToListAsync();
+    public async Task<List<Usuario>> ObtenerColaboradoresPorEmpresaAsync(int empresaId, bool incluirInactivos = false)
+    {
+        if (incluirInactivos)
+            return await _context.Usuarios.Where(u => u.EmpresaId == empresaId).ToListAsync();
 
-    return await _context.Usuarios.Where(u => u.EmpresaId == empresaId && u.Activo).ToListAsync();
-}
+        return await _context.Usuarios.Where(u => u.EmpresaId == empresaId && u.Activo).ToListAsync();
+    }
     // Actualizar un usuario existente
     public async Task<Usuario?> ActualizarUsuarioAsync(int id, UpdateUsuarioDto dto)
     {
@@ -82,48 +82,44 @@ public async Task<List<Usuario>> ObtenerColaboradoresPorEmpresaAsync(int empresa
         return usuario;
     }
 
-   
-private string HashPassword(string password)
-{
-    return BCrypt.Net.BCrypt.HashPassword(password);
-}
+    private string HashPassword(string password)
+    {
+        return BCrypt.Net.BCrypt.HashPassword(password);
+    }
 
     public async Task<int> ContarColaboradoresPorEmpresaAsync(int empresaId)
     {
         return await _context.Usuarios
-            .Where(u => u.EmpresaId == empresaId && u.Rol == "colaborador" && u.Activo )
+            .Where(u => u.EmpresaId == empresaId && u.Rol == "colaborador" && u.Activo)
             .CountAsync();
     }
 
+    public async Task<bool> InactivarUsuarioAsync(int id)
+    {
+        var usuario = await _context.Usuarios.FindAsync(id);
+        if (usuario == null)
+            return false;
 
-   public async Task<bool> InactivarUsuarioAsync(int id)
-{
-    var usuario = await _context.Usuarios.FindAsync(id);
-    if (usuario == null)
-        return false;
+        if (!usuario.Activo)
+            return false; 
 
-    if (!usuario.Activo)
-        return false; // Usuario ya inactivo
+        usuario.Activo = false;
+        await _context.SaveChangesAsync();
+        return true;
+    }
 
-    usuario.Activo = false;
-    await _context.SaveChangesAsync();
-    return true;
-}
+    public async Task GuardarCambiosAsync()
+    {
+        await _context.SaveChangesAsync();
+    }
+    public async Task<bool> ActivarUsuarioAsync(int id)
+    {
+        var usuario = await _context.Usuarios.FindAsync(id);
+        if (usuario == null || usuario.Activo)
+            return false;
 
-public async Task GuardarCambiosAsync()
-{
-    await _context.SaveChangesAsync();
-}
-public async Task<bool> ActivarUsuarioAsync(int id)
-{
-    var usuario = await _context.Usuarios.FindAsync(id);
-    if (usuario == null || usuario.Activo)
-        return false;
-
-    usuario.Activo = true;
-    return true;
-}
-
-
-
+        usuario.Activo = true;
+        return true;
+    }
+       
 }

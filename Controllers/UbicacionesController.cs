@@ -60,7 +60,7 @@ public async Task<IActionResult> DeleteUbicacion(int id)
     _context.Ubicaciones.Remove(ubicacion);
     await _context.SaveChangesAsync();
 
-    return NoContent(); // 204
+    return NoContent(); 
 }
 // GET api/ubicaciones/empresa/{empresaId}
 [HttpGet("empresa/{empresaId}")]

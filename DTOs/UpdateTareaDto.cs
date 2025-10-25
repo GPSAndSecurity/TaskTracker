@@ -4,7 +4,9 @@ namespace TaskTracker.DTOs
 {
    public class UpdateTareaDto
 {
-    public string Descripcion { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+    
+        public string Detalles { get; set; } = string.Empty;
     public int? UbicacionId { get; set; }     // solo el id
     public DateTime? FechaInicioEstimado { get; set; }
     public DateTime? FechaFinEstimado { get; set; }

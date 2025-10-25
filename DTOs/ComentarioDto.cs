@@ -7,7 +7,7 @@ namespace TaskTracker.DTOs
         public string UsuarioNombre { get; set; } = string.Empty;
         public string ComentarioTexto { get; set; } = string.Empty;
         public DateTime FechaComentario { get; set; }
-        public List<AdjuntoDto>? Adjuntos { get; set; } // opcional
+        public List<AdjuntoDto>? Adjuntos { get; set; } 
 
     }
 }

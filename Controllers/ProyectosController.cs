@@ -213,9 +213,5 @@ public async Task<IActionResult> ActualizarProyecto(int id, [FromBody] UpdatePro
         return int.TryParse(empresaClaim, out var id) ? id : null;
     }
 
-    private int? GetUsuarioIdFromToken()
-    {
-        var usuarioClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        return int.TryParse(usuarioClaim, out var id) ? id : null;
-    }
+
 }

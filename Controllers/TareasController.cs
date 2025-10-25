@@ -249,7 +249,7 @@ namespace TaskTracker.Controllers
 
             var descripcion = $"Se cambió el estado de la tarea '{tarea.Descripcion}' de '{estadoAnterior}' a '{nuevoEstado}'";
 
-            // 📝 Registrar evento para historial sin notificar al autor
+            // Registrar evento para historial sin notificar al autor
             await _auditoriaService.RegistrarEventoAsync(
                 accion: "Cambiar Estado",
                 entidad: "Tarea",
@@ -258,11 +258,11 @@ namespace TaskTracker.Controllers
                 generaNotificacion: false
             );
 
-            // 🔔 Notificar a los demás (excepto el que cambió el estado)
+            // Notificar a los demás (excepto el que cambió el estado)
             await _auditoriaService.NotificarUsuariosRelacionadosConTareaAsync(
                 tareaId,
                 usuarioId.Value,
-                "Cambio de estado en tarea", // ✅ título corregido
+                "Cambio de estado en tarea", 
                 descripcion,
                 "Tarea",
                 tareaId
@@ -448,8 +448,9 @@ namespace TaskTracker.Controllers
             var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
             if (tarea == null) return NotFound("Tarea no encontrada.");
 
-            // ✅ Actualizar propiedades de la tarea
+            // Actualizar propiedades de la tarea
             tarea.Descripcion = dto.Descripcion;
+            tarea.Detalles = dto.Detalles;
             tarea.UbicacionId = dto.UbicacionId;
             tarea.FechaInicioEstimado = dto.FechaInicioEstimado;
             tarea.FechaFinEstimado = dto.FechaFinEstimado;
@@ -460,7 +461,7 @@ namespace TaskTracker.Controllers
 
             await _tareaService.ActualizarTareaAsync(tarea);
 
-            // ✅ Procesar Datos Técnicos (si vienen en el DTO)
+            // Procesar Datos Técnicos (si vienen en el DTO)
             if (dto.DatosTecnicos != null)
             {
                 // Eliminar existentes
@@ -791,7 +792,7 @@ public async Task<IActionResult> EliminarSubtarea(int tareaId, int subtareaId)
     bool eliminado = await _tareaService.EliminarSubtareaAsync(tareaId, subtareaId);
     if (!eliminado) return BadRequest("No se pudo eliminar la subtarea.");
 
-    // Registrar evento en auditoría
+
     await _auditoriaService.RegistrarEventoAsync(
         accion: "Eliminar Subtarea",
         entidad: "Subtarea",

@@ -34,7 +34,7 @@ namespace TaskTracker.Services
             var log = new Auditoria
             {
                 UsuarioId = usuarioId,
-                UsuarioGeneradorId = usuarioId, // 👈 también aquí
+                UsuarioGeneradorId = usuarioId, 
                 Accion = accion,
                 Entidad = entidad,
                 EntidadId = entidadId,
@@ -153,7 +153,7 @@ namespace TaskTracker.Services
                 var notificacion = new Auditoria
                 {
                     UsuarioId = userId,
-                     UsuarioGeneradorId = usuarioQueRealizoLaAccion, // 👈 importante
+                     UsuarioGeneradorId = usuarioQueRealizoLaAccion, 
                     Accion = accion,
                     Descripcion = descripcion,
                     Entidad = entidad,
