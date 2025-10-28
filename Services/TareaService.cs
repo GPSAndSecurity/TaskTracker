@@ -40,6 +40,7 @@ public class TareaService
     {
         ProyectoId = dto.ProyectoId,
         Descripcion = dto.Descripcion,
+        Detalles = dto.Detalles,
         UbicacionId = dto.UbicacionId,
         FechaInicioEstimado = dto.FechaInicioEstimado,
         FechaFinEstimado = dto.FechaFinEstimado,
@@ -47,7 +48,7 @@ public class TareaService
         AttachmentRequerido = dto.AttachmentRequerido,
         UbicacionRequeridaAlCerrar = dto.UbicacionRequeridaAlCerrar,
         Estado = EstadoTarea.Pendiente,
-        Presupuesto = dto.Presupuesto  
+        Presupuesto = dto.Presupuesto
 
     };
 
