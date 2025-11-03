@@ -100,13 +100,6 @@ builder.Services.Configure<FormOptions>(options =>
 var app = builder.Build();
 
 
-//  SEED DATA (ADMIN DEFAULT)
-using (var scope = app.Services.CreateScope())
-{
-    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    AppDbContext.Seed(context);
-}
-
 //  MIDDLEWARE
 if (app.Environment.IsDevelopment())
 {

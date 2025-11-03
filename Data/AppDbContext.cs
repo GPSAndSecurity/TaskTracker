@@ -146,55 +146,5 @@ public DbSet<TareaTipoTrabajo> TareaTipoTrabajos { get; set; }
 
     }
 
-    // Método para agregar datos iniciales , despues de agregarlo se puede eliminar
-    public static void Seed(AppDbContext context)
-    {
-        context.Database.Migrate(); 
 
-        // Verificar si ya existe la empresa
-        if (!context.Empresas.Any(e => e.Id == 1))
-        {
-            context.Empresas.Add(new Empresa
-            {
-                Id = 1,
-                Nombre = "Empresa Principal"
-            });
-            context.SaveChanges();
-        }
-
-        // Verificar si ya existe un usuario superadmin 
-        if (context.Usuarios.Any(u => u.Rol == "superadmin"))
-        {
-            Console.WriteLine("✅ Ya existe un usuario superadmin.");
-            return;
-        }
-
-        try
-        {
-           string HashPassword(string password)
-{
-    return BCrypt.Net.BCrypt.HashPassword(password);
-}
-
-
-            var superadmin = new Usuario
-            {
-                Name = "Admin",
-                Lastname = "Principal",
-                Email = "admin@gpsandsecurity.com",
-                PasswordHash = HashPassword("admin123"),
-                Rol = "superadmin",
-                EmpresaId = 1
-            };
-
-            context.Usuarios.Add(superadmin);
-            context.SaveChanges();
-
-            Console.WriteLine("✅ Usuario superadmin creado correctamente.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ Error al crear usuario superadmin: {ex.Message}");
-        }
-    }
 }
