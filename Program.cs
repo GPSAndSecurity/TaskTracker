@@ -10,6 +10,9 @@ using TaskTracker.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+
+
 // CONEXIÓN A MYSQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -83,9 +86,10 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:4200", //website
-                      "http://localhost:8100"
-                      )
+        //policy.WithOrigins("http://localhost:4200", //website
+        //              "http://localhost:8100"
+        //              )
+        policy.AllowAnyOrigin()
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -97,6 +101,18 @@ builder.Services.Configure<FormOptions>(options =>
     options.MultipartBodyLengthLimit = 20 * 1024 * 1024; // 20 MB
 });
 
+
+
+// SOLO configurar Kestrel en producción
+if (!builder.Environment.IsDevelopment())
+{
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.ListenAnyIP(int.Parse(port));
+    });
+}
+
 var app = builder.Build();
 
 
@@ -107,15 +123,32 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseCors();
 
 //  Servir archivos estáticos desde la carpeta "Uploads"
-var UploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
+//var UploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
+//app.UseStaticFiles(new StaticFileOptions
+//{
+//    FileProvider = new PhysicalFileProvider(UploadsPath),
+//    RequestPath = "/Uploads"
+//});
+
+
+var uploadSettings = builder.Configuration.GetSection("UploadSettings");
+var uploadsPath = uploadSettings["Path"];
+if (!Directory.Exists(uploadsPath))
+{
+    Directory.CreateDirectory(uploadsPath);
+}
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(UploadsPath),
+    FileProvider = new PhysicalFileProvider(uploadsPath),
     RequestPath = "/Uploads"
 });
 
