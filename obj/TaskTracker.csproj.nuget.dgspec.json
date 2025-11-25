@@ -1,30 +1,30 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\gps and security\\TaskTracker\\TaskTracker.csproj": {}
+    "C:\\Users\\gps and security\\Documents\\GitHub\\TaskTracker\\TaskTracker.csproj": {}
   },
   "projects": {
-    "C:\\Users\\gps and security\\TaskTracker\\TaskTracker.csproj": {
+    "C:\\Users\\gps and security\\Documents\\GitHub\\TaskTracker\\TaskTracker.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\gps and security\\TaskTracker\\TaskTracker.csproj",
+        "projectUniqueName": "C:\\Users\\gps and security\\Documents\\GitHub\\TaskTracker\\TaskTracker.csproj",
         "projectName": "TaskTracker",
-        "projectPath": "C:\\Users\\gps and security\\TaskTracker\\TaskTracker.csproj",
+        "projectPath": "C:\\Users\\gps and security\\Documents\\GitHub\\TaskTracker\\TaskTracker.csproj",
         "packagesPath": "C:\\Users\\gps and security\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\gps and security\\TaskTracker\\obj\\",
+        "outputPath": "C:\\Users\\gps and security\\Documents\\GitHub\\TaskTracker\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\gps and security\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
-          "net8.0"
+          "net9.0"
         ],
         "sources": {
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
-          "net8.0": {
-            "targetAlias": "net8.0",
+          "net9.0": {
+            "targetAlias": "net9.0",
             "projectReferences": {}
           }
         },
@@ -37,15 +37,28 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        }
+        },
+        "SdkAnalysisLevel": "9.0.100"
       },
       "frameworks": {
-        "net8.0": {
-          "targetAlias": "net8.0",
+        "net9.0": {
+          "targetAlias": "net9.0",
           "dependencies": {
+            "AWSSDK.Extensions.NETCore.Setup": {
+              "target": "Package",
+              "version": "[4.0.3.14, )"
+            },
+            "AWSSDK.S3": {
+              "target": "Package",
+              "version": "[4.0.13.1, )"
+            },
             "BCrypt.Net-Next": {
               "target": "Package",
               "version": "[4.0.3, )"
+            },
+            "DotNetEnv": {
+              "target": "Package",
+              "version": "[3.1.1, )"
             },
             "Microsoft.AspNetCore.Authentication.JwtBearer": {
               "target": "Package",
@@ -75,7 +88,7 @@
             },
             "SixLabors.ImageSharp": {
               "target": "Package",
-              "version": "[3.1.11, )"
+              "version": "[3.1.12, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
@@ -105,7 +118,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.315/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.112/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

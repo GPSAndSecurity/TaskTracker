@@ -7,11 +7,17 @@ using System.Security.Claims;
 using System.Text;
 using TaskTracker.Data;
 using TaskTracker.Services;
+using Amazon.S3;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
 
+//aqui estoy poniendo lo de aws s3
+Env.Load(); 
 
-
+builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
+builder.Services.AddAWSService<IAmazonS3>();
+builder.Services.AddSingleton<S3Service>();
 
 // CONEXIÓN A MYSQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -155,7 +161,6 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();

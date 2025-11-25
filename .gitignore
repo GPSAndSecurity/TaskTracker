@@ -5,3 +5,4 @@
 /.vs/TaskTracker
 /bin/*
 /obj/*
+.env

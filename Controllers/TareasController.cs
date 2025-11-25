@@ -14,12 +14,14 @@ namespace TaskTracker.Controllers
         private readonly TareaService _tareaService;
         private readonly AuditoriaService _auditoriaService;
         private readonly ClienteService _clienteService;
+        private readonly S3Service _s3Service;
 
-        public TareasController(TareaService tareaService, AuditoriaService auditoriaService, ClienteService clienteService)
+        public TareasController(TareaService tareaService, AuditoriaService auditoriaService, ClienteService clienteService, S3Service s3Service )
         {
             _tareaService = tareaService;
             _auditoriaService = auditoriaService;
             _clienteService = clienteService;
+             _s3Service = s3Service;
 
 
         }
@@ -523,60 +525,102 @@ namespace TaskTracker.Controllers
             return Ok(tareas);
         }
 
-        [HttpPost("{tareaId}/adjuntos")]
-        public async Task<IActionResult> SubirAdjunto(int tareaId, IFormFile archivo)
+[HttpPost("{tareaId}/adjuntos")]
+public async Task<IActionResult> SubirAdjunto(int tareaId, IFormFile archivo)
+{
+    try
+    {
+        // VALIDACIONES INICIALES DE EMPRESAS Y ESO
+        var empresaId = GetEmpresaIdFromToken();
+        if (empresaId == null)
+            return Unauthorized("Token inválido.");
+
+        var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
+        if (tarea == null)
+            return NotFound("La tarea no existe o no pertenece a esta empresa.");
+
+        if (archivo == null || archivo.Length == 0)
+            return BadRequest("Archivo inválido.");
+
+        if (archivo.Length > 10 * 1024 * 1024) // 10MB
+            return BadRequest("El archivo excede el tamaño máximo permitido (10MB).");
+
+        // OBTENER NOMBRES DE CARPETAS
+        var empresaNombre = await _tareaService.ObtenerNombreEmpresaPorId(empresaId.Value);
+        var proyectoNombre = await _tareaService.ObtenerNombreProyectoPorId(tarea.ProyectoId);
+
+        if (string.IsNullOrEmpty(empresaNombre) || string.IsNullOrEmpty(proyectoNombre))
+            return BadRequest("No se pudo determinar empresa o proyecto.");
+
+        // Sanitizar
+        var empresaFolder = empresaNombre.Replace(" ", "_").Trim();
+        var proyectoFolder = proyectoNombre.Replace(" ", "_").Trim();
+
+
+        // PREPARAR ARCHIVO A SUBIR
+        var extension = Path.GetExtension(archivo.FileName).ToLower();
+        var nuevoNombre = $"{Guid.NewGuid()}{extension}";
+        var s3Key = $"{empresaFolder}/{proyectoFolder}/{nuevoNombre}";
+
+        Stream finalStream;
+
+        if (extension is ".jpg" or ".jpeg" or ".png")
         {
-            var empresaId = GetEmpresaIdFromToken();
-            if (empresaId == null) return Unauthorized();
+            using var originalStream = archivo.OpenReadStream();
+            var compressedStream = new MemoryStream();
 
-            var tarea = await _tareaService.ObtenerTareaDetalleAsync(tareaId, empresaId.Value);
-            if (tarea == null) return NotFound();
+            // COMPRIMIR IMAGEN
+            await _tareaService.ComprimirImagenStreamAsync(originalStream, compressedStream, extension);
 
-            if (archivo == null || archivo.Length == 0)
-                return BadRequest("Archivo inválido");
-
-            if (archivo.Length > 10 * 1024 * 1024) // 10MB
-                return BadRequest("El archivo excede el tamaño máximo de 5MB.");
-
-            // Obtener nombres legibles
-            var empresaNombre = await _tareaService.ObtenerNombreEmpresaPorId(empresaId.Value); // Debes implementar este método
-            var proyectoNombre = await _tareaService.ObtenerNombreProyectoPorId(tarea.ProyectoId); // Este también
-
-            if (string.IsNullOrEmpty(empresaNombre) || string.IsNullOrEmpty(proyectoNombre))
-                return BadRequest("No se pudo determinar empresa o proyecto.");
-
-            // Sanitizar nombres de carpetas
-            var empresaFolder = empresaNombre.Replace(" ", "_").Trim();
-            var proyectoFolder = proyectoNombre.Replace(" ", "_").Trim();
-
-            // Crear ruta organizada
-            var basePath = Path.Combine("Uploads", empresaFolder, proyectoFolder);
-            if (!Directory.Exists(basePath)) Directory.CreateDirectory(basePath);
-
-            var extension = Path.GetExtension(archivo.FileName).ToLower();
-            var fileName = $"{Guid.NewGuid()}{extension}";
-            var fullPath = Path.Combine(basePath, fileName);
-
-            // Comprimir imagen si es JPG o PNG
-            if (extension is ".jpg" or ".jpeg" or ".png")
-            {
-                using var stream = archivo.OpenReadStream();
-                await _tareaService.ComprimirYGuardarImagenAsync(stream, fullPath, extension);
-
-            }
-            else
-            {
-                using var stream = new FileStream(fullPath, FileMode.Create);
-                await archivo.CopyToAsync(stream);
-            }
-
-            // Guardar registro en la BD
-            var url = $"/Uploads/{empresaFolder}/{proyectoFolder}/{fileName}";
-            var adjunto = await _tareaService.AgregarAdjuntoAsync(tareaId, url, archivo.FileName);
-
-            return Ok(adjunto);
+            compressedStream.Position = 0;
+            finalStream = compressedStream;
+        }
+        else
+        {
+            // COPIAR ARCHIVO NORMAL
+            finalStream = new MemoryStream();
+            await archivo.CopyToAsync(finalStream);
+            finalStream.Position = 0;
         }
 
+
+        // SUBIR A AWS S3
+        string url;
+        try
+        {
+            url = await _s3Service.UploadFileAsync(finalStream, s3Key, archivo.ContentType);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error al subir archivo a S3: {ex.Message}");
+        }
+
+        // GUARDAR EN LA BASE DE DATOS
+        
+        var adjunto = await _tareaService.AgregarAdjuntoAsync(
+            tareaId,
+            url,
+            archivo.FileName
+        );
+
+        // RESPUESTA FINAL
+        return Ok(new
+        {
+            mensaje = "Archivo subido correctamente.",
+            url,
+            nombre_original = archivo.FileName,
+            nombre_alojado = nuevoNombre,
+            tareaId,
+            proyecto = proyectoNombre,
+            empresa = empresaNombre,
+            registro = adjunto
+        });
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, $"Error interno: {ex.Message}");
+    }
+}
 
 
         [HttpDelete("{tareaId}/colaboradores/{usuarioId}")]
