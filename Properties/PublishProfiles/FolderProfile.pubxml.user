@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- https://go.microsoft.com/fwlink/?LinkID=208121. -->
+<Project>
+  <PropertyGroup>
+    <TimeStampOfAssociatedLegacyPublishXmlFile />
+    <_PublishTargetUrl>C:\Sites\KanTrank-API</_PublishTargetUrl>
+    <History>True|2025-11-09T01:48:15.3502111Z||;True|2025-11-08T19:08:25.6340466-06:00||;True|2025-11-08T18:56:26.4931051-06:00||;True|2025-11-08T18:38:15.4388206-06:00||;True|2025-11-08T18:37:50.0882043-06:00||;True|2025-11-08T18:37:37.3510741-06:00||;True|2025-11-08T14:24:00.1356524-06:00||;True|2025-11-08T11:26:38.8417019-06:00||;True|2025-11-08T11:26:10.2616216-06:00||;True|2025-11-08T11:13:11.4403648-06:00||;True|2025-11-08T09:32:46.9496082-06:00||;</History>
+    <LastFailureDetails />
+  </PropertyGroup>
+  <ItemGroup>
+    <DestinationConnectionStrings Include="DefaultConnection">
+      <Value>server=databasesabuesotrack.ca6zya7z3wxn.us-west-2.rds.amazonaws.com%3bport=3306%3bdatabase=tasktracker%3buser=kantrack%3bpassword=GPS.k4ntr4ck#</Value>
+    </DestinationConnectionStrings>
+  </ItemGroup>
+</Project>
