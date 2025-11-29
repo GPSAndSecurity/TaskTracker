@@ -363,27 +363,31 @@ public class TareaService
         return proyecto?.Nombre;
     }
 
-    public async Task ComprimirYGuardarImagenAsync(Stream inputStream, string outputPath, string extension)
-    {
-        using var image = await Image.LoadAsync(inputStream);
+    public async Task ComprimirImagenStreamAsync(Stream inputStream, Stream outputStream, string extension)
+{
+    inputStream.Position = 0;
 
-        if (extension is ".jpg" or ".jpeg")
+    using var image = await Image.LoadAsync(inputStream);
+
+    if (extension is ".jpg" or ".jpeg")
+    {
+        var encoder = new JpegEncoder
         {
-            var encoder = new JpegEncoder
-            {
-                Quality = 75
-            };
-            await image.SaveAsync(outputPath, encoder);
-        }
-        else if (extension == ".png")
-        {
-            var encoder = new PngEncoder
-            {
-                CompressionLevel = PngCompressionLevel.BestCompression
-            };
-            await image.SaveAsync(outputPath, encoder);
-        }
+            Quality = 75 // calidad ajustable
+        };
+        await image.SaveAsync(outputStream, encoder);
     }
+    else if (extension == ".png")
+    {
+        var encoder = new PngEncoder
+        {
+            CompressionLevel = PngCompressionLevel.BestCompression
+        };
+        await image.SaveAsync(outputStream, encoder);
+    }
+
+    outputStream.Position = 0; // asegurarse de que el stream quede al inicio
+}
     public async Task<List<ComentarioAdjuntoDto>> ObtenerComentariosYAdjuntosComoComentariosAsync(int tareaId, int empresaId)
     {
         var tarea = await _context.Tareas
