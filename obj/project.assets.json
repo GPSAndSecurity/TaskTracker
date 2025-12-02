@@ -7933,11 +7933,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\gps and security\\Documents\\GitHub\\TaskTracker\\TaskTracker.csproj",
+      "projectUniqueName": "C:\\Users\\gps and security\\TaskTracker\\TaskTracker.csproj",
       "projectName": "TaskTracker",
-      "projectPath": "C:\\Users\\gps and security\\Documents\\GitHub\\TaskTracker\\TaskTracker.csproj",
+      "projectPath": "C:\\Users\\gps and security\\TaskTracker\\TaskTracker.csproj",
       "packagesPath": "C:\\Users\\gps and security\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\gps and security\\Documents\\GitHub\\TaskTracker\\obj\\",
+      "outputPath": "C:\\Users\\gps and security\\TaskTracker\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\gps and security\\AppData\\Roaming\\NuGet\\NuGet.Config"

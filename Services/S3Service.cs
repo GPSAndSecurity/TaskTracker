@@ -40,4 +40,18 @@ public class S3Service
         // URL PÚBLICA DEL ARCHIVO
         return $"https://{_bucketName}.s3.amazonaws.com/{key}";
     }
+
+ public string GetPresignedUrl(string key, int minutes = 60)
+    {
+        var request = new GetPreSignedUrlRequest
+        {
+            BucketName = _bucketName,
+            Key = key,
+            Expires = DateTime.UtcNow.AddMinutes(minutes),
+            Verb = HttpVerb.GET
+        };
+
+        return _s3Client.GetPreSignedURL(request);
+    }
+
 }

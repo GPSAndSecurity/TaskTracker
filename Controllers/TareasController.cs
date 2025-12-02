@@ -636,20 +636,48 @@ public async Task<IActionResult> SubirAdjunto(int tareaId, IFormFile archivo)
 
             return NoContent();
         }
+[HttpGet("{tareaId}/comentarios-adjuntos")]
+public async Task<IActionResult> ObtenerComentariosYAdjuntos(int tareaId)
+{
+    var empresaId = GetEmpresaIdFromToken();
+    if (empresaId == null) return Unauthorized();
 
-        [HttpGet("{tareaId}/comentarios-adjuntos")]
-        public async Task<IActionResult> ObtenerComentariosYAdjuntos(int tareaId)
+    var lista = await _tareaService.ObtenerComentariosYAdjuntosComoComentariosAsync(tareaId, empresaId.Value);
+
+    if (lista == null || lista.Count == 0)
+        return NotFound("No se encontraron comentarios ni adjuntos.");
+
+    // Convertir URL normal a Presigned URL
+    foreach (var item in lista)
+    {
+        if (!string.IsNullOrWhiteSpace(item.ArchivoUrl))
         {
-            var empresaId = GetEmpresaIdFromToken();
-            if (empresaId == null) return Unauthorized();
-
-            var lista = await _tareaService.ObtenerComentariosYAdjuntosComoComentariosAsync(tareaId, empresaId.Value);
-
-            if (lista == null || lista.Count == 0)
-                return NotFound("No se encontraron comentarios ni adjuntos.");
-
-            return Ok(lista);
+            var key = ObtenerKeyDesdeUrl(item.ArchivoUrl);
+            item.ArchivoUrl = _s3Service.GetPresignedUrl(key, minutes: 60);
         }
+    }
+
+    return Ok(lista);
+}
+private string ObtenerKeyDesdeUrl(string url)
+{
+    if (string.IsNullOrWhiteSpace(url))
+        return null;
+
+    url = url.Trim();
+
+    // Solo soporta URLs de S3 públicas
+    var s3Domain = ".s3.amazonaws.com/";
+    var index = url.IndexOf(s3Domain, StringComparison.OrdinalIgnoreCase);
+    if (index >= 0)
+    {
+        return url.Substring(index + s3Domain.Length);
+    }
+
+    // fallback seguro: retornar toda la URL
+    return url;
+}
+
 
         [HttpPut("{tareaId}/archivar")]
         [Authorize(Roles = "superadmin,admin_empresa")]

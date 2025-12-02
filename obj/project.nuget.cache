@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "W6a072iKFnQ=",
+  "dgSpecHash": "0juEwGRWvAc=",
   "success": true,
-  "projectFilePath": "C:\\Users\\gps and security\\Documents\\GitHub\\TaskTracker\\TaskTracker.csproj",
+  "projectFilePath": "C:\\Users\\gps and security\\TaskTracker\\TaskTracker.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\gps and security\\.nuget\\packages\\awssdk.core\\4.0.3.3\\awssdk.core.4.0.3.3.nupkg.sha512",
     "C:\\Users\\gps and security\\.nuget\\packages\\awssdk.extensions.netcore.setup\\4.0.3.14\\awssdk.extensions.netcore.setup.4.0.3.14.nupkg.sha512",
