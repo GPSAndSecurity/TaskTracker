@@ -677,8 +677,6 @@ private string ObtenerKeyDesdeUrl(string url)
     // fallback seguro: retornar toda la URL
     return url;
 }
-
-
         [HttpPut("{tareaId}/archivar")]
         [Authorize(Roles = "superadmin,admin_empresa")]
         public async Task<IActionResult> ArchivarTarea(int tareaId)
