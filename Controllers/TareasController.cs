@@ -664,18 +664,24 @@ private string ObtenerKeyDesdeUrl(string url)
     if (string.IsNullOrWhiteSpace(url))
         return null;
 
-    url = url.Trim();
+    var uri = new Uri(url);
 
-    // Solo soporta URLs de S3 públicas
-    var s3Domain = ".s3.amazonaws.com/";
-    var index = url.IndexOf(s3Domain, StringComparison.OrdinalIgnoreCase);
-    if (index >= 0)
+    /// 1. Formato tipo: bucket.s3.amazonaws.com/key
+    // 2. Formato tipo: s3-myBucket.s3.amazonaws.com/key
+    if (uri.Host.Contains(".s3.amazonaws.com"))
     {
-        return url.Substring(index + s3Domain.Length);
+        return uri.AbsolutePath.TrimStart('/');
     }
 
-    // fallback seguro: retornar toda la URL
-    return url;
+    // 3. Formatos tipo: s3.region.amazonaws.com/bucket/key (por si AWS cambia)
+    if (uri.Host.StartsWith("s3") && uri.Segments.Length > 2)
+    {
+        // Une todos los segmentos después del bucket
+        return string.Join("", uri.Segments.Skip(2)).TrimStart('/');
+    }
+
+    // 4. Fallback seguro
+    return uri.AbsolutePath.TrimStart('/');
 }
         [HttpPut("{tareaId}/archivar")]
         [Authorize(Roles = "superadmin,admin_empresa")]
